@@ -3,74 +3,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FisioPlus - Protótipo MediaPipe Pose & Vetores</title>
+  <title>FisioPlus - Análise Biomecânica & Vetores de Pose</title>
+  <link rel="stylesheet" href="/fonts/material-symbols.css">
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
+  <!-- Tela de Carregamento / Splash Screen Imersiva -->
+  <div id="splash-screen" class="splash-screen" role="dialog" aria-modal="true" aria-label="Carregando FisioPlus">
+    <div class="splash-container">
+      <!-- Vídeo de Animação Preenchendo a Maior Parte da Tela -->
+      <div class="splash-media-wrapper">
+        <video id="splash-video" class="splash-video" autoplay loop muted playsinline>
+          <source src="/Logo-animacao.webm" type="video/webm">
+          <source src="/Logo-animacao.mp4" type="video/mp4">
+          <img src="/Logo.svg" alt="FisioPlus Logotipo" class="splash-fallback-logo">
+        </video>
+      </div>
+
+      <!-- Barra Flutuante de Status e Progresso -->
+      <div class="splash-overlay-card">
+        <img src="/Logo.svg" alt="FisioPlus Logotipo" class="splash-brand-logo">
+        <div class="splash-loader">
+          <div class="loader-bar-track">
+            <div id="splash-progress-bar" class="loader-bar-fill"></div>
+          </div>
+          <div class="splash-status-container">
+            <span class="material-symbols-outlined icon-spin splash-status-icon">sync</span>
+            <span id="splash-status-text" class="splash-status-text">Inicializando motor de visão computacional...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
 
+  <!-- Cabeçalho Principal do App -->
   <header role="banner" class="app-header">
     <div class="header-container">
-      <h1 class="app-title">Visualizador de Pose & Vetores Biomecânicos</h1>
+      <div class="brand-group">
+        <!-- Logotipo em Tamanho Amplo e Destacado (sem texto redundante ao lado) -->
+        <img src="/Logo.svg" alt="FisioPlus Logotipo" class="header-logo-image">
+      </div>
+
       <div class="status-badge-container">
         <span id="model-status" class="status-badge status-loading" role="status" aria-live="polite">
-          Carregando modelo MediaPipe...
+          <span class="material-symbols-outlined status-icon icon-spin">sync</span>
+          <span class="status-text">Carregando MediaPipe...</span>
         </span>
         <span id="fps-counter" class="fps-badge" aria-label="Taxa de quadros por segundo">
-          FPS: 0
+          <span class="material-symbols-outlined badge-icon">speed</span>
+          <span id="fps-value">FPS: 0</span>
         </span>
       </div>
     </div>
   </header>
 
+  <!-- Layout Principal de Página Única (SPA) -->
   <main id="main-content" class="main-layout">
-    <!-- Coluna da Esquerda: Reprodutor / Canvas de Visualização -->
+    <!-- Coluna da Esquerda: Viewport Principal (Vídeo + Canvas Overlay) -->
     <section class="viewport-section" aria-label="Área de Visualização do Vídeo e Vetores">
-      <div class="viewport-container">
-        <!-- Elemento de Vídeo Escondido para Captura da Webcam/Arquivo -->
-        <video id="webcam-video" playsinline muted style="display: none;"></video>
-        <!-- Imagem Oculta para Teste Estático -->
-        <img id="static-image" alt="Imagem de teste estático" style="display: none;">
-
-        <!-- Canvas Principal de Renderização de Vetores -->
-        <canvas id="output-canvas" aria-label="Visualização em tempo real do esqueleto de pose e vetores"></canvas>
-        
-        <div id="canvas-overlay-msg" class="overlay-message" role="alert">
-          <p id="overlay-text">Selecione uma fonte de vídeo ou faça upload de um arquivo para iniciar.</p>
+      <div class="viewport-card">
+        <div class="viewport-header">
+          <span class="material-symbols-outlined card-header-icon">videocam</span>
+          <h2 class="viewport-card-title">Mapa Corporal & Visão Computacional</h2>
         </div>
-      </div>
 
-      <!-- Barra de Controles Rápidos do Player -->
-      <div class="player-controls-bar">
-        <button id="btn-toggle-play" class="btn btn-primary" disabled aria-label="Iniciar ou Pausar Detecção">
-          ▶ Iniciar Detecção
-        </button>
-        <div class="file-input-group">
-          <label for="video-upload" class="btn btn-secondary">
-            📁 Carregar Vídeo de Teste
-          </label>
-          <input type="file" id="video-upload" accept="video/*" class="sr-only">
+        <div class="viewport-container">
+          <!-- Elemento de Vídeo Escondido para Captura da Webcam/Arquivo -->
+          <video id="webcam-video" playsinline muted style="display: none;"></video>
+          <!-- Imagem Oculta para Teste Estático -->
+          <img id="static-image" alt="Imagem de teste estático" style="display: none;">
+
+          <!-- Canvas Principal de Renderização de Vetores -->
+          <canvas id="output-canvas" aria-label="Visualização em tempo real do esqueleto de pose e vetores"></canvas>
+          
+          <div id="canvas-overlay-msg" class="overlay-message" role="alert">
+            <span class="material-symbols-outlined overlay-icon">sensors</span>
+            <p id="overlay-text">Selecione uma fonte de vídeo ou faça upload de um arquivo para iniciar.</p>
+          </div>
         </div>
-        <div class="file-input-group">
-          <label for="image-upload" class="btn btn-secondary">
-            🖼️ Carregar Imagem de Teste
-          </label>
-          <input type="file" id="image-upload" accept="image/*" class="sr-only">
+
+        <!-- Barra de Controles Rápidos do Player -->
+        <div class="player-controls-bar">
+          <button id="btn-toggle-play" class="btn btn-primary" disabled aria-label="Iniciar ou Pausar Detecção">
+            <span class="material-symbols-outlined btn-icon">play_arrow</span>
+            <span class="btn-label">Iniciar Detecção</span>
+          </button>
+          
+          <div class="file-input-group">
+            <label for="video-upload" class="btn btn-secondary">
+              <span class="material-symbols-outlined btn-icon">movie</span>
+              <span>Carregar Vídeo</span>
+            </label>
+            <input type="file" id="video-upload" accept="video/*" class="sr-only">
+          </div>
+
+          <div class="file-input-group">
+            <label for="image-upload" class="btn btn-secondary">
+              <span class="material-symbols-outlined btn-icon">image</span>
+              <span>Carregar Imagem</span>
+            </label>
+            <input type="file" id="image-upload" accept="image/*" class="sr-only">
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Coluna da Direita: Painel de Configurações, Câmeras e Inspeção de Vetores -->
+    <!-- Coluna da Direita: Painel de Controles, Câmeras e Inspeção de Vetores -->
     <aside class="sidebar-section" aria-label="Painel de Controles e Telemetria de Vetores">
       <!-- Card 1: Seleção da Fonte de Vídeo / Câmera -->
       <section class="card" aria-labelledby="card-source-title">
-        <h2 id="card-source-title" class="card-title">Fonte de Entrada</h2>
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">input</span>
+          <h2 id="card-source-title" class="card-title">Fonte de Entrada</h2>
+        </div>
         
         <div class="form-group">
           <label for="source-mode-select" class="form-label">Modo de Operação:</label>
           <select id="source-mode-select" class="form-control">
-            <option value="webcam">Webcam / Câmera</option>
-            <option value="video">Arquivo de Vídeo (Teste sem Câmera)</option>
+            <option value="webcam">Webcam / Câmera Ao Vivo</option>
+            <option value="video">Arquivo de Vídeo (Local)</option>
             <option value="image">Imagem Estática (Foto)</option>
           </select>
         </div>
@@ -80,43 +133,55 @@
           <select id="camera-select" class="form-control">
             <option value="">Procurando câmeras...</option>
           </select>
-          <p id="camera-warning" class="help-text warning-text" style="display: none;" role="alert">
-            ⚠️ Nenhuma webcam física detectada. Utilize a opção "Arquivo de Vídeo" para testar o modelo.
-          </p>
+          <div id="camera-warning" class="help-text warning-card" style="display: none;" role="alert">
+            <span class="material-symbols-outlined warning-icon">warning</span>
+            <span>Nenhuma webcam física detectada. Utilize a opção "Arquivo de Vídeo" para testar o modelo.</span>
+          </div>
         </div>
       </section>
 
       <!-- Card 2: Opções de Renderização dos Vetores -->
       <section class="card" aria-labelledby="card-render-title">
-        <h2 id="card-render-title" class="card-title">Exibição de Vetores & Ângulos</h2>
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">tune</span>
+          <h2 id="card-render-title" class="card-title">Exibição de Vetores & Ângulos</h2>
+        </div>
         
         <div class="checkbox-group">
           <label class="checkbox-label">
             <input type="checkbox" id="chk-connectors" checked>
-            Esqueleto (Linhas Conectoras)
+            <span class="material-symbols-outlined chk-icon">hub</span>
+            <span>Esqueleto (Linhas Conectoras)</span>
           </label>
           <label class="checkbox-label">
             <input type="checkbox" id="chk-vectors" checked>
-            Vetores Direcionais (Setas Cyan)
+            <span class="material-symbols-outlined chk-icon">north_east</span>
+            <span>Vetores Direcionais (Setas Cyan)</span>
           </label>
           <label class="checkbox-label">
             <input type="checkbox" id="chk-angles" checked>
-            Ângulos Articulares (Cotovelo, Joelho, Ombro)
+            <span class="material-symbols-outlined chk-icon">square_foot</span>
+            <span>Ângulos Articulares (Cotovelo, Joelho, Ombro)</span>
           </label>
           <label class="checkbox-label">
             <input type="checkbox" id="chk-ids">
-            IDs dos 33 Landmarks Numéricos
+            <span class="material-symbols-outlined chk-icon">tag</span>
+            <span>IDs dos 33 Landmarks Numéricos</span>
           </label>
           <label class="checkbox-label">
             <input type="checkbox" id="chk-3d">
-            Cálculo 3D (Z-coordinate incluído)
+            <span class="material-symbols-outlined chk-icon">view_in_ar</span>
+            <span>Cálculo 3D (Eixo Z Incluído)</span>
           </label>
         </div>
       </section>
 
       <!-- Card 3: Tabela de Coordenadas dos Landmarks (33 Pontos) -->
       <section class="card card-table" aria-labelledby="card-data-title">
-        <h2 id="card-data-title" class="card-title">Inspetor de Coordenadas (33 Landmarks)</h2>
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon">table_chart</span>
+          <h2 id="card-data-title" class="card-title">Inspetor de Coordenadas (33 Landmarks)</h2>
+        </div>
         
         <div class="table-container">
           <table class="data-table" aria-label="Tabela de coordenadas dos pontos do esqueleto">
@@ -143,3 +208,5 @@
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
+
+

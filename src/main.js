@@ -6,8 +6,12 @@ import { LANDMARK_NAMES } from "./vectorMath.js";
 const poseService = new PoseLandmarkerService();
 
 // Elementos do DOM
+const splashScreen = document.getElementById("splash-screen");
+const splashProgressBar = document.getElementById("splash-progress-bar");
+const splashStatusText = document.getElementById("splash-status-text");
+
 const modelStatusEl = document.getElementById("model-status");
-const fpsCounterEl = document.getElementById("fps-counter");
+const fpsValueEl = document.getElementById("fps-value");
 const webcamVideo = document.getElementById("webcam-video");
 const staticImage = document.getElementById("static-image");
 const outputCanvas = document.getElementById("output-canvas");
@@ -46,9 +50,36 @@ let activeStream = null;
 document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   initTableRows();
+  updateSplashProgress(30, "Verificando câmeras do sistema...");
   await checkCameraAvailability();
+  
+  updateSplashProgress(60, "Carregando inteligência artificial de pose...");
   await loadMediaPipeModel();
 });
+
+/**
+ * Atualiza o progresso visual da Splash Screen
+ */
+function updateSplashProgress(percentage, text) {
+  if (splashProgressBar) {
+    splashProgressBar.style.width = `${percentage}%`;
+  }
+  if (splashStatusText && text) {
+    splashStatusText.textContent = text;
+  }
+}
+
+/**
+ * Oculta a Tela de Carregamento / Splash Screen com efeito suave
+ */
+function dismissSplashScreen() {
+  updateSplashProgress(100, "Pronto!");
+  setTimeout(() => {
+    if (splashScreen) {
+      splashScreen.classList.add("splash-hidden");
+    }
+  }, 400);
+}
 
 /**
  * Preenche a tabela com as 33 linhas de landmarks
@@ -94,16 +125,22 @@ function updateLandmarksTable(landmarks) {
  */
 async function loadMediaPipeModel() {
   try {
-    modelStatusEl.textContent = "Carregando modelo MediaPipe...";
     modelStatusEl.className = "status-badge status-loading";
+    modelStatusEl.innerHTML = `
+      <span class="material-symbols-outlined status-icon icon-spin">sync</span>
+      <span class="status-text">Carregando MediaPipe...</span>
+    `;
 
     await poseService.initialize({
       modelPath: "/pose_landmarker_heavy.task",
       runningMode: "VIDEO"
     });
 
-    modelStatusEl.textContent = "Modelo Pronto (Heavy GPU/CPU)";
     modelStatusEl.className = "status-badge status-ready";
+    modelStatusEl.innerHTML = `
+      <span class="material-symbols-outlined status-icon">check_circle</span>
+      <span class="status-text">Modelo Pronto (Heavy)</span>
+    `;
     btnTogglePlay.disabled = false;
 
     // Se o modo webcam falhou por falta de câmera, sugere vídeo
@@ -112,11 +149,17 @@ async function loadMediaPipeModel() {
     } else {
       overlayText.textContent = "Modelo pronto! Clique em 'Iniciar Detecção' ou selecione um arquivo de vídeo.";
     }
+
+    dismissSplashScreen();
   } catch (error) {
     console.error("Erro ao carregar MediaPipe PoseLandmarker:", error);
-    modelStatusEl.textContent = "Erro ao carregar modelo";
     modelStatusEl.className = "status-badge status-error";
+    modelStatusEl.innerHTML = `
+      <span class="material-symbols-outlined status-icon">error</span>
+      <span class="status-text">Erro no Modelo</span>
+    `;
     overlayText.textContent = "Falha ao inicializar o detector de pose. Verifique o arquivo pose_landmarker_heavy.task.";
+    dismissSplashScreen();
   }
 }
 
@@ -153,9 +196,8 @@ async function checkCameraAvailability() {
 }
 
 function showNoCameraState() {
-  cameraWarning.style.display = "block";
+  cameraWarning.style.display = "flex";
   cameraSelect.innerHTML = `<option value="">Nenhuma câmera disponível</option>`;
-  // Alterna o modo padrão para vídeo de teste
   sourceModeSelect.value = "video";
   currentSourceMode = "video";
 }
@@ -172,7 +214,7 @@ function setupEventListeners() {
     if (currentSourceMode === "webcam") {
       overlayText.textContent = "Modo Webcam ativado. Clique em 'Iniciar Detecção'.";
     } else if (currentSourceMode === "video") {
-      overlayText.textContent = "Modo Vídeo ativado. Selecione um arquivo de vídeo de teste.";
+      overlayText.textContent = "Modo Vídeo ativado. Selecione um arquivo de vídeo para testar.";
     } else if (currentSourceMode === "image") {
       overlayText.textContent = "Modo Imagem ativado. Selecione uma foto estática.";
     }
@@ -266,7 +308,7 @@ async function startDetection() {
     } catch (err) {
       console.error("Erro ao acessar a webcam:", err);
       alert("Não foi possível acessar a webcam. Certifique-se de conectar uma câmera ou utilize o modo 'Arquivo de Vídeo'.");
-      overlayMsg.style.display = "block";
+      overlayMsg.style.display = "flex";
       overlayText.textContent = "Erro de acesso à câmera. Selecione um arquivo de vídeo para testar.";
       return;
     }
@@ -281,7 +323,10 @@ async function startDetection() {
   }
 
   isRunning = true;
-  btnTogglePlay.textContent = "⏸ Pausar Detecção";
+  btnTogglePlay.innerHTML = `
+    <span class="material-symbols-outlined btn-icon">pause</span>
+    <span class="btn-label">Pausar Detecção</span>
+  `;
   btnTogglePlay.className = "btn btn-secondary";
   
   lastFrameTime = performance.now();
@@ -306,9 +351,12 @@ function stopDetection() {
     webcamVideo.pause();
   }
 
-  btnTogglePlay.textContent = "▶ Iniciar Detecção";
+  btnTogglePlay.innerHTML = `
+    <span class="material-symbols-outlined btn-icon">play_arrow</span>
+    <span class="btn-label">Iniciar Detecção</span>
+  `;
   btnTogglePlay.className = "btn btn-primary";
-  overlayMsg.style.display = "block";
+  overlayMsg.style.display = "flex";
   overlayText.textContent = "Detecção pausada.";
 }
 
@@ -339,7 +387,9 @@ function renderLoop() {
   frameCount++;
   if (now - lastFpsUpdateTime >= 1000) {
     const fps = Math.round((frameCount * 1000) / (now - lastFpsUpdateTime));
-    fpsCounterEl.textContent = `FPS: ${fps}`;
+    if (fpsValueEl) {
+      fpsValueEl.textContent = `FPS: ${fps}`;
+    }
     frameCount = 0;
     lastFpsUpdateTime = now;
   }

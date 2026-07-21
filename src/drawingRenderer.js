@@ -75,9 +75,6 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
 
-  // Limpa o canvas antes de redesenhar
-  ctx.clearRect(0, 0, width, height);
-
   if (!landmarks || landmarks.length === 0) return;
 
   // 1. Desenhar Conexões do Esqueleto (Linhas Sólidas de Alto Contraste)
