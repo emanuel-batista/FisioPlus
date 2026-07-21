@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FisioPlus - Protótipo MediaPipe Pose & Vetores</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+
+  <header role="banner" class="app-header">
+    <div class="header-container">
+      <h1 class="app-title">Visualizador de Pose & Vetores Biomecânicos</h1>
+      <div class="status-badge-container">
+        <span id="model-status" class="status-badge status-loading" role="status" aria-live="polite">
+          Carregando modelo MediaPipe...
+        </span>
+        <span id="fps-counter" class="fps-badge" aria-label="Taxa de quadros por segundo">
+          FPS: 0
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content" class="main-layout">
+    <!-- Coluna da Esquerda: Reprodutor / Canvas de Visualização -->
+    <section class="viewport-section" aria-label="Área de Visualização do Vídeo e Vetores">
+      <div class="viewport-container">
+        <!-- Elemento de Vídeo Escondido para Captura da Webcam/Arquivo -->
+        <video id="webcam-video" playsinline muted style="display: none;"></video>
+        <!-- Imagem Oculta para Teste Estático -->
+        <img id="static-image" alt="Imagem de teste estático" style="display: none;">
+
+        <!-- Canvas Principal de Renderização de Vetores -->
+        <canvas id="output-canvas" aria-label="Visualização em tempo real do esqueleto de pose e vetores"></canvas>
+        
+        <div id="canvas-overlay-msg" class="overlay-message" role="alert">
+          <p id="overlay-text">Selecione uma fonte de vídeo ou faça upload de um arquivo para iniciar.</p>
+        </div>
+      </div>
+
+      <!-- Barra de Controles Rápidos do Player -->
+      <div class="player-controls-bar">
+        <button id="btn-toggle-play" class="btn btn-primary" disabled aria-label="Iniciar ou Pausar Detecção">
+          ▶ Iniciar Detecção
+        </button>
+        <div class="file-input-group">
+          <label for="video-upload" class="btn btn-secondary">
+            📁 Carregar Vídeo de Teste
+          </label>
+          <input type="file" id="video-upload" accept="video/*" class="sr-only">
+        </div>
+        <div class="file-input-group">
+          <label for="image-upload" class="btn btn-secondary">
+            🖼️ Carregar Imagem de Teste
+          </label>
+          <input type="file" id="image-upload" accept="image/*" class="sr-only">
+        </div>
+      </div>
+    </section>
+
+    <!-- Coluna da Direita: Painel de Configurações, Câmeras e Inspeção de Vetores -->
+    <aside class="sidebar-section" aria-label="Painel de Controles e Telemetria de Vetores">
+      <!-- Card 1: Seleção da Fonte de Vídeo / Câmera -->
+      <section class="card" aria-labelledby="card-source-title">
+        <h2 id="card-source-title" class="card-title">Fonte de Entrada</h2>
+        
+        <div class="form-group">
+          <label for="source-mode-select" class="form-label">Modo de Operação:</label>
+          <select id="source-mode-select" class="form-control">
+            <option value="webcam">Webcam / Câmera</option>
+            <option value="video">Arquivo de Vídeo (Teste sem Câmera)</option>
+            <option value="image">Imagem Estática (Foto)</option>
+          </select>
+        </div>
+
+        <div id="webcam-select-container" class="form-group">
+          <label for="camera-select" class="form-label">Dispositivo de Câmera:</label>
+          <select id="camera-select" class="form-control">
+            <option value="">Procurando câmeras...</option>
+          </select>
+          <p id="camera-warning" class="help-text warning-text" style="display: none;" role="alert">
+            ⚠️ Nenhuma webcam física detectada. Utilize a opção "Arquivo de Vídeo" para testar o modelo.
+          </p>
+        </div>
+      </section>
+
+      <!-- Card 2: Opções de Renderização dos Vetores -->
+      <section class="card" aria-labelledby="card-render-title">
+        <h2 id="card-render-title" class="card-title">Exibição de Vetores & Ângulos</h2>
+        
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-connectors" checked>
+            Esqueleto (Linhas Conectoras)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-vectors" checked>
+            Vetores Direcionais (Setas Cyan)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-angles" checked>
+            Ângulos Articulares (Cotovelo, Joelho, Ombro)
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-ids">
+            IDs dos 33 Landmarks Numéricos
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-3d">
+            Cálculo 3D (Z-coordinate incluído)
+          </label>
+        </div>
+      </section>
+
+      <!-- Card 3: Tabela de Coordenadas dos Landmarks (33 Pontos) -->
+      <section class="card card-table" aria-labelledby="card-data-title">
+        <h2 id="card-data-title" class="card-title">Inspetor de Coordenadas (33 Landmarks)</h2>
+        
+        <div class="table-container">
+          <table class="data-table" aria-label="Tabela de coordenadas dos pontos do esqueleto">
+            <thead>
+              <tr>
+                <th scope="col">Landmark</th>
+                <th scope="col">X</th>
+                <th scope="col">Y</th>
+                <th scope="col">Z</th>
+                <th scope="col">Visibilidade</th>
+              </tr>
+            </thead>
+            <tbody id="landmarks-tbody">
+              <tr>
+                <td colspan="5" class="text-center">Aguardando dados da detecção...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

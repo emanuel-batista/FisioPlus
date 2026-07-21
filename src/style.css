@@ -1,0 +1,398 @@
+/* ==========================================================================
+   FisioPlus Pose Landmarker - Estilos com Foco em Acessibilidade & Cores Sólidas
+   ========================================================================== */
+
+:root {
+  /* Cores Sólidas de Alto Contraste (WCAG 2.1 AAA Compliant) */
+  --bg-main: #090D16;
+  --bg-card: #161E2E;
+  --bg-card-header: #1E293B;
+  --bg-viewport: #000000;
+  
+  --text-main: #FFFFFF;
+  --text-muted: #CBD5E1;
+  --text-dark: #000000;
+
+  --border-color: #334155;
+  --border-focus: #38BDF8;
+
+  --btn-primary-bg: #0284C7;
+  --btn-primary-hover: #0369A1;
+  --btn-secondary-bg: #334155;
+  --btn-secondary-hover: #475569;
+
+  --status-loading-bg: #92400E;
+  --status-loading-fg: #FEF3C7;
+  --status-ready-bg: #166534;
+  --status-ready-fg: #DCFCE7;
+  --status-error-bg: #991B1B;
+  --status-error-fg: #FEE2E2;
+
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Reset básico e caixa */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Skip link para acessibilidade de teclado */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 10px;
+  background: #FFFF00;
+  color: #000000;
+  padding: 8px 16px;
+  font-weight: bold;
+  z-index: 100;
+  transition: top 0.2s;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 10px;
+}
+
+/* Utilitário para ocultar visualmente mantendo leitura para leitores de tela */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Header */
+.app-header {
+  background-color: var(--bg-card);
+  border-bottom: 2px solid var(--border-color);
+  padding: 16px 24px;
+}
+
+.header-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.status-badge-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.status-loading {
+  background-color: var(--status-loading-bg);
+  color: var(--status-loading-fg);
+}
+
+.status-ready {
+  background-color: var(--status-ready-bg);
+  color: var(--status-ready-fg);
+}
+
+.status-error {
+  background-color: var(--status-error-bg);
+  color: var(--status-error-fg);
+}
+
+.fps-badge {
+  background-color: #0F172A;
+  color: #38BDF8;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+/* Layout Principal */
+.main-layout {
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Coluna Viewport / Canvas */
+.viewport-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.viewport-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--bg-viewport);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#output-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.overlay-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #000000;
+  border: 2px solid #FFFFFF;
+  color: #FFFFFF;
+  padding: 16px 24px;
+  border-radius: 4px;
+  text-align: center;
+  max-width: 80%;
+  z-index: 10;
+}
+
+/* Controles Rápidos */
+.player-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  background-color: var(--bg-card);
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+/* Botões com alto contraste */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background-color: var(--btn-primary-bg);
+  border-color: #0284C7;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--btn-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--btn-secondary-bg);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--btn-secondary-hover);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Painel de Controle e Inspeção (Sidebar) */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 18px;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+/* Formulários & Controls */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  background-color: #0F172A;
+  color: #FFFFFF;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.form-control:focus {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.help-text {
+  font-size: 0.85rem;
+  margin-top: 6px;
+}
+
+.warning-text {
+  color: #F87171;
+  font-weight: bold;
+}
+
+/* Checkboxes de Alto Contraste */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0284C7;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"]:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Tabela de Dados */
+.card-table {
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+}
+
+.table-container {
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: #0B1120;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-card-header);
+  color: #FFFFFF;
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 700;
+}
+
+.data-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #1E293B;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.data-table tr:nth-child(even) {
+  background-color: #111827;
+}
+
+.data-table tr:hover {
+  background-color: #1E293B;
+}
+
+.text-center {
+  text-align: center;
+}
