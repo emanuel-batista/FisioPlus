@@ -3,210 +3,372 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FisioPlus - Análise Biomecânica & Vetores de Pose</title>
+  <title>FisioPlus Game - Desafio Biomecânico de Estande</title>
   <link rel="stylesheet" href="/fonts/material-symbols.css">
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
-  <!-- Tela de Carregamento / Splash Screen Imersiva -->
-  <div id="splash-screen" class="splash-screen" role="dialog" aria-modal="true" aria-label="Carregando FisioPlus">
-    <div class="splash-container">
-      <!-- Vídeo de Animação Preenchendo a Maior Parte da Tela -->
-      <div class="splash-media-wrapper">
-        <video id="splash-video" class="splash-video" autoplay loop muted playsinline>
-          <source src="/Logo-animacao.webm" type="video/webm">
-          <source src="/Logo-animacao.mp4" type="video/mp4">
-          <img src="/Logo.svg" alt="FisioPlus Logotipo" class="splash-fallback-logo">
-        </video>
-      </div>
+  <div id="app" class="app-container">
 
-      <!-- Barra Flutuante de Status e Progresso -->
-      <div class="splash-overlay-card">
-        <img src="/Logo.svg" alt="FisioPlus Logotipo" class="splash-brand-logo">
-        <div class="splash-loader">
-          <div class="loader-bar-track">
-            <div id="splash-progress-bar" class="loader-bar-fill"></div>
-          </div>
-          <div class="splash-status-container">
-            <span class="material-symbols-outlined icon-spin splash-status-icon">sync</span>
-            <span id="splash-status-text" class="splash-status-text">Inicializando motor de visão computacional...</span>
-          </div>
-        </div>
+    <!-- Aviso do Uso de Cookies -->
+    <div id="cookie-banner" class="cookie-banner" style="display: none;">
+      <div class="cookie-banner-content">
+        <span class="material-symbols-outlined cookie-icon">cookie</span>
+        <span class="cookie-text">Este site utiliza cookies para salvar suas preferências de câmera e configurações do modo debug.</span>
+        <button id="btn-accept-cookies" class="btn-cyber-primary btn-small">Entendi e Aceitar</button>
       </div>
     </div>
-  </div>
 
-  <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
-
-  <!-- Cabeçalho Principal do App -->
-  <header role="banner" class="app-header">
-    <div class="header-container">
-      <div class="brand-group">
-        <!-- Logotipo em Tamanho Amplo e Destacado (sem texto redundante ao lado) -->
-        <img src="/Logo.svg" alt="FisioPlus Logotipo" class="header-logo-image">
-      </div>
-
-      <div class="status-badge-container">
-        <span id="model-status" class="status-badge status-loading" role="status" aria-live="polite">
-          <span class="material-symbols-outlined status-icon icon-spin">sync</span>
-          <span class="status-text">Carregando MediaPipe...</span>
-        </span>
-        <span id="fps-counter" class="fps-badge" aria-label="Taxa de quadros por segundo">
-          <span class="material-symbols-outlined badge-icon">speed</span>
-          <span id="fps-value">FPS: 0</span>
-        </span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Layout Principal de Página Única (SPA) -->
-  <main id="main-content" class="main-layout">
-    <!-- Coluna da Esquerda: Viewport Principal (Vídeo + Canvas Overlay) -->
-    <section class="viewport-section" aria-label="Área de Visualização do Vídeo e Vetores">
-      <div class="viewport-card">
-        <div class="viewport-header">
-          <span class="material-symbols-outlined card-header-icon">videocam</span>
-          <h2 class="viewport-card-title">Mapa Corporal & Visão Computacional</h2>
+    <!-- ========================================== -->
+    <!-- TELA 1: CARREGAMENTO (LOADING SCREEN)      -->
+    <!-- ========================================== -->
+    <section id="screen-loading" class="spa-screen active" aria-label="Tela de Carregamento">
+      <div class="loading-wrapper">
+        <div class="loading-media">
+          <video id="loading-video" autoplay loop muted playsinline class="loading-video">
+            <source src="/Logo-animacao.webm" type="video/webm">
+            <source src="/Logo-animacao.mp4" type="video/mp4">
+            <img src="/Logo.svg" alt="FisioPlus Logotipo" class="loading-fallback-logo">
+          </video>
         </div>
 
-        <div class="viewport-container">
-          <!-- Elemento de Vídeo Escondido para Captura da Webcam/Arquivo -->
-          <video id="webcam-video" playsinline muted style="display: none;"></video>
-          <!-- Imagem Oculta para Teste Estático -->
-          <img id="static-image" alt="Imagem de teste estático" style="display: none;">
+        <div class="loading-card">
+          <img src="/Logo.svg" alt="FisioPlus Logotipo" class="brand-logo-large">
+          <p class="loading-subtitle">Análise Biomecânica de Alta Precisão</p>
 
-          <!-- Canvas Principal de Renderização de Vetores -->
-          <canvas id="output-canvas" aria-label="Visualização em tempo real do esqueleto de pose e vetores"></canvas>
-          
-          <div id="canvas-overlay-msg" class="overlay-message" role="alert">
-            <span class="material-symbols-outlined overlay-icon">sensors</span>
-            <p id="overlay-text">Selecione uma fonte de vídeo ou faça upload de um arquivo para iniciar.</p>
-          </div>
-        </div>
-
-        <!-- Barra de Controles Rápidos do Player -->
-        <div class="player-controls-bar">
-          <button id="btn-toggle-play" class="btn btn-primary" disabled aria-label="Iniciar ou Pausar Detecção">
-            <span class="material-symbols-outlined btn-icon">play_arrow</span>
-            <span class="btn-label">Iniciar Detecção</span>
-          </button>
-          
-          <div class="file-input-group">
-            <label for="video-upload" class="btn btn-secondary">
-              <span class="material-symbols-outlined btn-icon">movie</span>
-              <span>Carregar Vídeo</span>
-            </label>
-            <input type="file" id="video-upload" accept="video/*" class="sr-only">
-          </div>
-
-          <div class="file-input-group">
-            <label for="image-upload" class="btn btn-secondary">
-              <span class="material-symbols-outlined btn-icon">image</span>
-              <span>Carregar Imagem</span>
-            </label>
-            <input type="file" id="image-upload" accept="image/*" class="sr-only">
+          <div class="progress-container">
+            <div class="progress-bar-track">
+              <div id="loading-progress-bar" class="progress-bar-fill" style="width: 15%;"></div>
+            </div>
+            <div class="progress-status">
+              <span class="material-symbols-outlined icon-spin">sync</span>
+              <span id="loading-status-text">Carregando Inteligência Artificial e Modelos...</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Coluna da Direita: Painel de Controles, Câmeras e Inspeção de Vetores -->
-    <aside class="sidebar-section" aria-label="Painel de Controles e Telemetria de Vetores">
-      <!-- Card 1: Seleção da Fonte de Vídeo / Câmera -->
-      <section class="card" aria-labelledby="card-source-title">
-        <div class="card-header">
-          <span class="material-symbols-outlined card-icon">input</span>
-          <h2 id="card-source-title" class="card-title">Fonte de Entrada</h2>
-        </div>
-        
-        <div class="form-group">
-          <label for="source-mode-select" class="form-label">Modo de Operação:</label>
-          <select id="source-mode-select" class="form-control">
-            <option value="webcam">Webcam / Câmera Ao Vivo</option>
-            <option value="video">Arquivo de Vídeo (Local)</option>
-            <option value="image">Imagem Estática (Foto)</option>
-          </select>
+    <!-- ========================================== -->
+    <!-- TELA 2: INICIAL / LOGO E COMEÇAR           -->
+    <!-- ========================================== -->
+    <section id="screen-start" class="spa-screen" aria-label="Tela Inicial">
+      <div class="cyber-background-grid"></div>
+      <div class="start-content-container">
+        <!-- Logotipo em destaque hero -->
+        <div class="logo-hero-container">
+          <img src="/Logo.svg" alt="FisioPlus Logotipo" class="hero-logo-large">
+          <div class="hero-badge">DESAFIO GAMIFICADO • EDIÇÃO ESTANDE</div>
         </div>
 
-        <div id="webcam-select-container" class="form-group">
-          <label for="camera-select" class="form-label">Dispositivo de Câmera:</label>
-          <select id="camera-select" class="form-control">
-            <option value="">Procurando câmeras...</option>
-          </select>
-          <div id="camera-warning" class="help-text warning-card" style="display: none;" role="alert">
-            <span class="material-symbols-outlined warning-icon">warning</span>
-            <span>Nenhuma webcam física detectada. Utilize a opção "Arquivo de Vídeo" para testar o modelo.</span>
+        <div class="start-action-card">
+          <h2 class="start-heading">TESTE SUA PRECISÃO DE MOVIMENTO!</h2>
+          <p class="start-subheading">Inteligência Artificial analisando cada articulação em tempo real.</p>
+          
+          <button id="btn-goto-challenge" class="btn-cyber-primary btn-giant">
+            <span class="material-symbols-outlined btn-icon-large">play_arrow</span>
+            <span>COMEÇAR O DESAFIO</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TELA 3: DESAFIO E REGRAS (CHALLENGE)       -->
+    <!-- ========================================== -->
+    <section id="screen-challenge" class="spa-screen" aria-label="Regras do Desafio">
+      <div class="challenge-container">
+        <div class="challenge-card">
+          <div class="challenge-badge">MISSÃO DE ESTANDE</div>
+          <h2 class="challenge-title">FAÇA 10 REPETIÇÕES COM PELO MENOS 90% DE PRECISÃO PARA GANHAR!</h2>
+
+          <div class="rules-grid">
+            <div class="rule-item">
+              <span class="material-symbols-outlined rule-icon">repeat</span>
+              <div class="rule-text">
+                <h3>10 Repetições Perfeitas</h3>
+                <p>Complete o ciclo total de flexão e extensão da articulação escolhida.</p>
+              </div>
+            </div>
+
+            <div class="rule-item">
+              <span class="material-symbols-outlined rule-icon">target</span>
+              <div class="rule-text">
+                <h3>90%+ de Precisão</h3>
+                <p>Mantenha a postura e a amplitude corretas para pontuar alto na IA.</p>
+              </div>
+            </div>
+
+            <div class="rule-item">
+              <span class="material-symbols-outlined rule-icon">videocam</span>
+              <div class="rule-text">
+                <h3>Visão ao Vivo</h3>
+                <p>Posicione-se na webcam ou utilize um vídeo de demonstração do estande.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuração Rápida de Exercício e Entrada -->
+          <div class="challenge-options">
+            <div class="form-group-inline">
+              <label for="challenge-exercise-select">Exercício:</label>
+              <select id="challenge-exercise-select" class="cyber-select">
+                <option value="elbowFlexion">Flexão de Cotovelo / Rosca</option>
+                <option value="squat">Agachamento (Joelho)</option>
+                <option value="shoulderAbduction">Abdução de Ombro</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="btn-start-game" class="btn-cyber-success btn-giant">
+            <span class="material-symbols-outlined btn-icon-large">sports_esports</span>
+            <span>PRONTO! JOGAR AGORA</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TELA 4: ARENA DO JOGO / MODELO RODANDO    -->
+    <!-- ========================================== -->
+    <section id="screen-game" class="spa-screen" aria-label="Arena de Jogo do Modelo">
+      
+      <!-- Banner Flutuante de Modo Debug (Código 1234) -->
+      <div id="debug-banner" class="debug-banner" style="display: none;">
+        <div class="debug-banner-content">
+          <span class="material-symbols-outlined debug-icon">bug_report</span>
+          <span class="debug-title">MODO DEBUG ATIVO (Código 1234) • REPETIÇÕES ILIMITADAS</span>
+          
+          <div class="debug-quick-actions">
+            <label class="cyber-checkbox debug-checkbox-inline" title="Salvo via cookie">
+              <input type="checkbox" id="chk-disable-autocam">
+              <span class="checkbox-custom"></span>
+              <span>Não abrir câmera automaticamente</span>
+            </label>
+            <button id="btn-debug-sim-rep" class="btn-debug-action">+1 Rep Simulada</button>
+            <button id="btn-debug-sim-win" class="btn-debug-action">Testar Vitória</button>
+            <button id="btn-debug-exit" class="btn-debug-action btn-debug-close">Sair do Debug</button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- Card 2: Opções de Renderização dos Vetores -->
-      <section class="card" aria-labelledby="card-render-title">
-        <div class="card-header">
-          <span class="material-symbols-outlined card-icon">tune</span>
-          <h2 id="card-render-title" class="card-title">Exibição de Vetores & Ângulos</h2>
+      <!-- HUD Top Bar Spectator Scoreboard -->
+      <header class="game-hud-bar">
+        <div class="hud-brand">
+          <img src="/Logo.svg" alt="FisioPlus Logotipo" class="hud-logo">
+        </div>
+
+        <div class="hud-score-board">
+          <div class="hud-stat-box">
+            <span class="stat-label">REPETIÇÕES</span>
+            <div class="stat-value-container">
+              <span id="hud-reps-count" class="stat-value-huge">0</span>
+              <span id="hud-reps-total" class="stat-value-total">/ 10</span>
+            </div>
+          </div>
+
+          <div class="hud-stat-box">
+            <span class="stat-label">PRECISÃO BIOMECÂNICA</span>
+            <div class="stat-value-container">
+              <span id="hud-accuracy-percent" class="stat-value-huge text-neon-green">100%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-actions">
+          <button id="btn-reset-session" class="btn-cyber-small btn-warning" title="Próximo Participante do Estande">
+            <span class="material-symbols-outlined">restart_alt</span>
+            <span>Reiniciar</span>
+          </button>
+          <button id="btn-toggle-sidebar" class="btn-cyber-small btn-secondary" title="Configurações e Vetores">
+            <span class="material-symbols-outlined">tune</span>
+            <span>Cálculos</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Status Banner de Instruções em Tempo Real -->
+      <div id="game-status-banner" class="hud-status-banner">
+        <span class="material-symbols-outlined status-pulse-icon">sensors</span>
+        <span id="game-status-text">Inicie a webcam ou selecione um vídeo para rodar o modelo.</span>
+      </div>
+
+      <!-- Layout Principal da Arena (Viewport + Sidebar de Cálculos) -->
+      <div class="game-arena-layout">
+        
+        <!-- Viewport Principal de Vídeo + Canvas Neon -->
+        <main class="game-viewport-card">
+          <div class="canvas-wrapper">
+            <video id="webcam-video" playsinline muted style="display: none;"></video>
+            <img id="static-image" alt="Imagem de teste" style="display: none;">
+            <canvas id="output-canvas"></canvas>
+
+            <!-- Mensagem de Overlay caso sem vídeo -->
+            <div id="canvas-overlay-msg" class="viewport-overlay">
+              <span class="material-symbols-outlined overlay-big-icon">videocam_off</span>
+              <p id="overlay-text">Aguardando ativação da câmera ou arquivo de vídeo...</p>
+            </div>
+          </div>
+
+          <!-- Barra de Ações Rápidas do Vídeo -->
+          <footer class="game-viewport-controls">
+            <button id="btn-toggle-play" class="btn-cyber-primary">
+              <span class="material-symbols-outlined">play_arrow</span>
+              <span class="btn-label">Iniciar Câmera</span>
+            </button>
+
+            <div class="file-btn-wrapper">
+              <label for="video-upload" class="btn-cyber-secondary">
+                <span class="material-symbols-outlined">movie</span>
+                <span>Carregar Vídeo</span>
+              </label>
+              <input type="file" id="video-upload" accept="video/*" class="sr-only">
+            </div>
+
+            <div class="file-btn-wrapper">
+              <label for="image-upload" class="btn-cyber-secondary">
+                <span class="material-symbols-outlined">image</span>
+                <span>Carregar Foto</span>
+              </label>
+              <input type="file" id="image-upload" accept="image/*" class="sr-only">
+            </div>
+          </footer>
+        </main>
+
+        <!-- Sidebar Lateral de Configuração de Cálculos e Vetores (Gaveta Deslizante) -->
+        <aside id="game-sidebar" class="game-sidebar-drawer">
+          <div class="sidebar-header">
+            <h3><span class="material-symbols-outlined">tune</span> Configuração de Cálculos</h3>
+            <button id="btn-close-sidebar" class="btn-icon-only">&times;</button>
+          </div>
+
+          <div class="sidebar-content">
+            <!-- Telemetria Rápida de Debug (Visível no modo Debug) -->
+            <section id="debug-sidebar-card" class="sidebar-card debug-card-highlight" style="display: none;">
+              <h4>Telemetria Debug (1234)</h4>
+              <div class="debug-info-grid">
+                <div><strong>Exercício:</strong> <span id="debug-exercise-val">elbowFlexion</span></div>
+                <div><strong>Ângulo Atual:</strong> <span id="debug-angle-val">180°</span></div>
+                <div><strong>Fase:</strong> <span id="debug-phase-val">extended</span></div>
+                <div><strong>Modo:</strong> <span id="debug-mode-val" style="color: #00ff88; font-weight: 900;">ILIMITADO (∞)</span></div>
+              </div>
+            </section>
+
+            <!-- Card 1: Fonte de Entrada -->
+            <section class="sidebar-card">
+              <h4>Fonte de Entrada</h4>
+              <div class="form-group">
+                <label for="source-mode-select">Modo de Entrada:</label>
+                <select id="source-mode-select" class="cyber-select">
+                  <option value="webcam">Webcam Ao Vivo</option>
+                  <option value="video">Arquivo de Vídeo (Local)</option>
+                  <option value="image">Foto Estática</option>
+                </select>
+              </div>
+
+              <div id="webcam-select-container" class="form-group">
+                <label for="camera-select">Câmera:</label>
+                <select id="camera-select" class="cyber-select">
+                  <option value="">Buscando webcams...</option>
+                </select>
+              </div>
+            </section>
+
+            <!-- Card 2: Opções de Renderização dos Vetores -->
+            <section class="sidebar-card">
+              <h4>Vetores & Visualização 3D</h4>
+              <div class="checkbox-stack">
+                <label class="cyber-checkbox">
+                  <input type="checkbox" id="chk-connectors" checked>
+                  <span class="checkbox-custom"></span>
+                  <span>Esqueleto Neon Glow</span>
+                </label>
+                <label class="cyber-checkbox">
+                  <input type="checkbox" id="chk-vectors" checked>
+                  <span class="checkbox-custom"></span>
+                  <span>Vetores Laser Direcionais</span>
+                </label>
+                <label class="cyber-checkbox">
+                  <input type="checkbox" id="chk-angles" checked>
+                  <span class="checkbox-custom"></span>
+                  <span>Ângulos Articulares em Tempo Real</span>
+                </label>
+                <label class="cyber-checkbox">
+                  <input type="checkbox" id="chk-ids">
+                  <span class="checkbox-custom"></span>
+                  <span>IDs dos 33 Landmarks</span>
+                </label>
+                <label class="cyber-checkbox">
+                  <input type="checkbox" id="chk-3d">
+                  <span class="checkbox-custom"></span>
+                  <span>Cálculos de Eixo 3D</span>
+                </label>
+              </div>
+            </section>
+
+            <!-- Card 3: Inspetor de Coordenadas dos Landmarks -->
+            <section class="sidebar-card">
+              <h4>Inspetor de 33 Landmarks</h4>
+              <div class="table-scroll-container">
+                <table class="cyber-table">
+                  <thead>
+                    <tr>
+                      <th>Landmark</th>
+                      <th>X</th>
+                      <th>Y</th>
+                      <th>Z</th>
+                    </tr>
+                  </thead>
+                  <tbody id="landmarks-tbody">
+                    <tr>
+                      <td colspan="4">Aguardando modelo MediaPipe...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- MODAL DE VITÓRIA / CELEBRAÇÃO DE ESTANDE   -->
+    <!-- ========================================== -->
+    <div id="modal-victory" class="modal-overlay" role="dialog" aria-modal="true">
+      <img id="victory-confetti-img" src="/confetti.gif" alt="Confetti Comemoração" class="victory-confetti-gif">
+      <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+
+      <div class="victory-card-glow">
+        <div class="trophy-icon-wrapper">
+          <span class="material-symbols-outlined trophy-icon">emoji_events</span>
         </div>
         
-        <div class="checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="chk-connectors" checked>
-            <span class="material-symbols-outlined chk-icon">hub</span>
-            <span>Esqueleto (Linhas Conectoras)</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chk-vectors" checked>
-            <span class="material-symbols-outlined chk-icon">north_east</span>
-            <span>Vetores Direcionais (Setas Cyan)</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chk-angles" checked>
-            <span class="material-symbols-outlined chk-icon">square_foot</span>
-            <span>Ângulos Articulares (Cotovelo, Joelho, Ombro)</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chk-ids">
-            <span class="material-symbols-outlined chk-icon">tag</span>
-            <span>IDs dos 33 Landmarks Numéricos</span>
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chk-3d">
-            <span class="material-symbols-outlined chk-icon">view_in_ar</span>
-            <span>Cálculo 3D (Eixo Z Incluído)</span>
-          </label>
-        </div>
-      </section>
+        <h2 class="victory-title">DESAFIO CONCLUÍDO!</h2>
+        <p class="victory-subtitle">Parabéns! Você alcançou o objetivo com performance incrível!</p>
 
-      <!-- Card 3: Tabela de Coordenadas dos Landmarks (33 Pontos) -->
-      <section class="card card-table" aria-labelledby="card-data-title">
-        <div class="card-header">
-          <span class="material-symbols-outlined card-icon">table_chart</span>
-          <h2 id="card-data-title" class="card-title">Inspetor de Coordenadas (33 Landmarks)</h2>
+        <div class="victory-stats-grid">
+          <div class="v-stat-box">
+            <span class="v-stat-num">10 / 10</span>
+            <span class="v-stat-label">REPETIÇÕES</span>
+          </div>
+          <div class="v-stat-box">
+            <span id="victory-accuracy-val" class="v-stat-num text-neon-green">95%</span>
+            <span class="v-stat-label">PRECISÃO POSTURAL</span>
+          </div>
         </div>
-        
-        <div class="table-container">
-          <table class="data-table" aria-label="Tabela de coordenadas dos pontos do esqueleto">
-            <thead>
-              <tr>
-                <th scope="col">Landmark</th>
-                <th scope="col">X</th>
-                <th scope="col">Y</th>
-                <th scope="col">Z</th>
-                <th scope="col">Visibilidade</th>
-              </tr>
-            </thead>
-            <tbody id="landmarks-tbody">
-              <tr>
-                <td colspan="5" class="text-center">Aguardando dados da detecção...</td>
-              </tr>
-            </tbody>
-          </table>
+
+        <div class="victory-actions">
+          <button id="btn-next-participant" class="btn-cyber-success btn-giant">
+            <span class="material-symbols-outlined">restart_alt</span>
+            <span>PRÓXIMO PARTICIPANTE</span>
+          </button>
         </div>
-      </section>
-    </aside>
-  </main>
+      </div>
+    </div>
+
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
-
-

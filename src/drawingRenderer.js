@@ -2,38 +2,45 @@ import { PoseLandmarker } from "@mediapipe/tasks-vision";
 import { calculateKeyJointAngles } from "./vectorMath.js";
 
 /**
- * Renderizador de Canvas com Foco em Alta Acessibilidade e Cores Sólidas de Alto Contraste.
+ * Renderizador de Canvas Gamificado & Maximalista para Estande de Eventos.
+ * Suporta esqueletos glowing neon, vetores laser direcionais, indicadores de ângulo e mensagens flutuantes.
+ * Mapeia coordenadas respeitando a proporção de aspecto (Aspect Ratio) sem esticar o vídeo.
  */
 
-// Paleta de Cores Sólidas de Alto Contraste (Acessibilidade WCAG)
-const HIGH_CONTRAST_COLORS = {
-  connector: "#FFFFFF",        // Linha branca sólida espessa
-  vectorArrow: "#00E5FF",      // Cyan sólido para vetores direcionais
-  landmarkPoint: "#FFE600",    // Amarelo sólido para pontos de articulação
-  jointTextBg: "#000000",      // Fundo preto para texto (contraste máximo)
-  jointTextFg: "#FFFFFF",      // Texto branco sólido
-  angleArc: "#00FF66"          // Verde-lima sólido para arcos de ângulo
+const GAMING_COLORS = {
+  connector: "#00f2fe",         // Cyan Neon Brilhante
+  connectorGlow: "#4facfe",     // Brilho Cyan
+  vectorArrow: "#00ff88",       // Verde Neon Laser
+  landmarkPoint: "#ff007f",     // Rosa Neon Choque
+  landmarkGlow: "#ff007f",      // Brilho Rosa
+  jointTextBg: "rgba(10, 14, 26, 0.85)", // Fundo escuro transparente estilo Sci-Fi
+  jointTextBorder: "#00f2fe",   // Borda Cyan Neon
+  jointTextFg: "#ffffff",       // Texto branco brilhante
+  angleArc: "#7000ff"           // Violeta Neon
 };
 
 /**
- * Desenha uma seta indicando a direção do vetor entre dois pontos
+ * Desenha uma seta glowing indicando a direção do vetor entre dois pontos
  */
-function drawVectorArrow(ctx, pA, pB, width, height, color = HIGH_CONTRAST_COLORS.vectorArrow) {
-  const xA = pA.x * width;
-  const yA = pA.y * height;
-  const xB = pB.x * width;
-  const yB = pB.y * height;
+function drawVectorArrow(ctx, pA, pB, bounds, color = GAMING_COLORS.vectorArrow) {
+  const { offsetX, offsetY, drawWidth, drawHeight } = bounds;
+  const xA = offsetX + pA.x * drawWidth;
+  const yA = offsetY + pA.y * drawHeight;
+  const xB = offsetX + pB.x * drawWidth;
+  const yB = offsetY + pB.y * drawHeight;
 
   const dx = xB - xA;
   const dy = yB - yA;
   const angle = Math.atan2(dy, dx);
   const length = Math.sqrt(dx * dx + dy * dy);
 
-  if (length < 5) return; // Não desenha vetores insignificantes
+  if (length < 5) return;
 
   ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
   ctx.lineWidth = 3;
 
   // Corpo da seta
@@ -43,7 +50,7 @@ function drawVectorArrow(ctx, pA, pB, width, height, color = HIGH_CONTRAST_COLOR
   ctx.stroke();
 
   // Cabeça da seta
-  const headLength = 12;
+  const headLength = 14;
   ctx.beginPath();
   ctx.moveTo(xB, yB);
   ctx.lineTo(
@@ -61,7 +68,7 @@ function drawVectorArrow(ctx, pA, pB, width, height, color = HIGH_CONTRAST_COLOR
 }
 
 /**
- * Renderiza o esqueleto de pose, vetores direcionais e métricas de ângulo no canvas.
+ * Renderiza o esqueleto de pose, vetores direcionais e métricas de ângulo no canvas respeitando o enquadramento sem esticar.
  */
 export function drawPoseResults(ctx, landmarks, options = {}) {
   const {
@@ -69,18 +76,35 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
     showVectors = true,
     showAngles = true,
     showLandmarkIds = false,
-    use3D = false
+    use3D = false,
+    floatingMessages = [],
+    bounds = null
   } = options;
 
   const width = ctx.canvas.width;
   const height = ctx.canvas.height;
 
+  // Se bounds não for fornecido, assume tela inteira
+  const renderBounds = bounds || {
+    offsetX: 0,
+    offsetY: 0,
+    drawWidth: width,
+    drawHeight: height
+  };
+
+  const { offsetX, offsetY, drawWidth, drawHeight } = renderBounds;
+
   if (!landmarks || landmarks.length === 0) return;
 
-  // 1. Desenhar Conexões do Esqueleto (Linhas Sólidas de Alto Contraste)
+  const toX = (normX) => offsetX + normX * drawWidth;
+  const toY = (normY) => offsetY + normY * drawHeight;
+
+  // 1. Conexões do Esqueleto com Efeito Glow Cyberpunk
   if (showConnectors && PoseLandmarker.POSE_CONNECTIONS) {
     ctx.save();
-    ctx.strokeStyle = HIGH_CONTRAST_COLORS.connector;
+    ctx.strokeStyle = GAMING_COLORS.connector;
+    ctx.shadowColor = GAMING_COLORS.connectorGlow;
+    ctx.shadowBlur = 12;
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
 
@@ -90,15 +114,15 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
 
       if (p1 && p2 && (p1.visibility ?? 1) > 0.3 && (p2.visibility ?? 1) > 0.3) {
         ctx.beginPath();
-        ctx.moveTo(p1.x * width, p1.y * height);
-        ctx.lineTo(p2.x * width, p2.y * height);
+        ctx.moveTo(toX(p1.x), toY(p1.y));
+        ctx.lineTo(toX(p2.x), toY(p2.y));
         ctx.stroke();
       }
     }
     ctx.restore();
   }
 
-  // 2. Desenhar Vetores Direcionais Chave (Ombro->Cotovelo, Cotovelo->Pulso, Quadril->Joelho, Joelho->Tornozelo)
+  // 2. Vetores Direcionais (Setas Neon Laser)
   if (showVectors) {
     const vectorPairs = [
       [11, 13], [13, 15], // Braço esquerdo
@@ -113,45 +137,44 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
       const pB = landmarks[idxB];
 
       if (pA && pB && (pA.visibility ?? 1) > 0.4 && (pB.visibility ?? 1) > 0.4) {
-        drawVectorArrow(ctx, pA, pB, width, height);
+        drawVectorArrow(ctx, pA, pB, renderBounds);
       }
     }
   }
 
-  // 3. Desenhar Pontos de Landmarks (Círculos Amarelos Sólidos com Borda Preta)
+  // 3. Pontos Articulados (Landmarks Rosa Neon com Sombra Glow)
   ctx.save();
   for (let i = 0; i < landmarks.length; i++) {
     const lm = landmarks[i];
     if ((lm.visibility ?? 1) < 0.2) continue;
 
-    const cx = lm.x * width;
-    const cy = lm.y * height;
-    const radius = Math.max(3, Math.min(8, 6 - (lm.z || 0) * 10));
+    const cx = toX(lm.x);
+    const cy = toY(lm.y);
+    const radius = Math.max(4, Math.min(9, 7 - (lm.z || 0) * 10));
 
-    // Desenha círculo interno amarelo
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = HIGH_CONTRAST_COLORS.landmarkPoint;
+    ctx.fillStyle = GAMING_COLORS.landmarkPoint;
+    ctx.shadowColor = GAMING_COLORS.landmarkGlow;
+    ctx.shadowBlur = 10;
     ctx.fill();
 
-    // Borda preta sólida para contraste perfeito
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     // Rótulo numérico opcional do ID do Landmark
     if (showLandmarkIds) {
-      ctx.fillStyle = "#FFFFFF";
+      ctx.fillStyle = "#00f2fe";
       ctx.font = "bold 12px sans-serif";
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 3;
-      ctx.strokeText(i.toString(), cx + 8, cy + 4);
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = "#000000";
       ctx.fillText(i.toString(), cx + 8, cy + 4);
     }
   }
   ctx.restore();
 
-  // 4. Desenhar Ângulos Articulares com Rótulos de Alta Visibilidade
+  // 4. Ângulos Articulares com Card Sci-Fi Transparente
   if (showAngles) {
     const keyAngles = calculateKeyJointAngles(landmarks, use3D);
     if (keyAngles) {
@@ -165,33 +188,60 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
       ];
 
       ctx.save();
-      ctx.font = "bold 14px sans-serif";
+      ctx.font = "bold 13px sans-serif";
 
       for (const item of angleConfig) {
         const angleVal = keyAngles[item.key];
         const lm = landmarks[item.idx];
 
         if (lm && (lm.visibility ?? 1) > 0.4 && angleVal > 0) {
-          const px = lm.x * width;
-          const py = lm.y * height;
+          const px = toX(lm.x);
+          const py = toY(lm.y);
           const text = `${item.label}${angleVal}°`;
           const textWidth = ctx.measureText(text).width;
 
-          // Caixa de Fundo Preta Sólida para garantir legibilidade (Acessibilidade)
-          ctx.fillStyle = HIGH_CONTRAST_COLORS.jointTextBg;
-          ctx.fillRect(px + 10, py - 18, textWidth + 12, 24);
+          // Card estilizado Sci-Fi
+          ctx.fillStyle = GAMING_COLORS.jointTextBg;
+          ctx.beginPath();
+          ctx.roundRect(px + 10, py - 18, textWidth + 14, 24, 6);
+          ctx.fill();
 
-          // Borda amarela sólida
-          ctx.strokeStyle = HIGH_CONTRAST_COLORS.landmarkPoint;
+          ctx.strokeStyle = GAMING_COLORS.jointTextBorder;
+          ctx.shadowColor = GAMING_COLORS.jointTextBorder;
+          ctx.shadowBlur = 6;
           ctx.lineWidth = 1.5;
-          ctx.strokeRect(px + 10, py - 18, textWidth + 12, 24);
+          ctx.stroke();
 
-          // Texto Branco Sólido
-          ctx.fillStyle = HIGH_CONTRAST_COLORS.jointTextFg;
-          ctx.fillText(text, px + 16, py - 1);
+          ctx.fillStyle = GAMING_COLORS.jointTextFg;
+          ctx.shadowBlur = 0;
+          ctx.fillText(text, px + 17, py - 2);
         }
       }
       ctx.restore();
     }
+  }
+
+  // 5. Renderizar Mensagens Flutuantes Gamificadas sobre o Canvas
+  if (floatingMessages && floatingMessages.length > 0) {
+    ctx.save();
+    for (const msg of floatingMessages) {
+      const centerX = width / 2;
+      const centerY = height * 0.4 - msg.yOffset;
+
+      ctx.font = `900 ${Math.round(28 * msg.scale)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.fillStyle = msg.color;
+      ctx.shadowColor = msg.color;
+      ctx.shadowBlur = 15;
+      ctx.globalAlpha = msg.opacity;
+
+      ctx.strokeStyle = "#0a0e1a";
+      ctx.lineWidth = 4;
+      ctx.strokeText(msg.text, centerX, centerY);
+      ctx.fillText(msg.text, centerX, centerY);
+    }
+    ctx.restore();
   }
 }
