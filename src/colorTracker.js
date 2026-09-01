@@ -29,12 +29,12 @@ export class ColorTracker {
       // Vermelho: Envolve o 0° (340°-360° e 0°-25°)
       red: {
         hMin1: 0,
-        hMax1: 25,
-        hMin2: 335,
+        hMax1: 12,  // Reduzido para evitar capturar os tons de laranja da pele
+        hMin2: 345,
         hMax2: 360,
-        sMin: 30,
+        sMin: 60,   // Aumentado drasticamente para ignorar a pele (que costuma ter S < 40%)
         sMax: 100,
-        vMin: 25,
+        vMin: 60,   // Aumentado para evitar sombras e dobras na roupa
         vMax: 100
       }
     };
