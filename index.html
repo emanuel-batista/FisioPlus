@@ -14,7 +14,7 @@
     <div id="cookie-banner" class="cookie-banner" style="display: none;">
       <div class="cookie-banner-content">
         <span class="material-symbols-outlined cookie-icon">cookie</span>
-        <span class="cookie-text">Este site utiliza cookies para salvar suas preferências de câmera e configurações do modo debug.</span>
+        <span class="cookie-text">Este site salva preferências de câmera e calibração para o estande.</span>
         <button id="btn-accept-cookies" class="btn-cyber-primary btn-small">Entendi e Aceitar</button>
       </div>
     </div>
@@ -34,15 +34,15 @@
 
         <div class="loading-card">
           <img src="/Logo.svg" alt="FisioPlus Logotipo" class="brand-logo-large">
-          <p class="loading-subtitle">Análise Biomecânica de Alta Precisão</p>
+          <h1 class="loading-title">FisioPlus</h1>
 
           <div class="progress-container">
             <div class="progress-bar-track">
-              <div id="loading-progress-bar" class="progress-bar-fill" style="width: 15%;"></div>
+              <div id="loading-progress-bar" class="progress-bar-fill" style="width: 25%;"></div>
             </div>
             <div class="progress-status">
               <span class="material-symbols-outlined icon-spin">sync</span>
-              <span id="loading-status-text">Carregando Inteligência Artificial e Modelos...</span>
+              <span id="loading-status-text">Otimizando visão computacional e marcadores...</span>
             </div>
           </div>
         </div>
@@ -58,12 +58,12 @@
         <!-- Logotipo em destaque hero -->
         <div class="logo-hero-container">
           <img src="/Logo.svg" alt="FisioPlus Logotipo" class="hero-logo-large">
-          <div class="hero-badge">DESAFIO GAMIFICADO • EDIÇÃO ESTANDE</div>
+          <div class="hero-badge">DESAFIO GAMIFICADO • FEC EDITION FEITO POR EMANUEL SILVA</div>
         </div>
 
         <div class="start-action-card">
           <h2 class="start-heading">TESTE SUA PRECISÃO DE MOVIMENTO!</h2>
-          <p class="start-subheading">Inteligência Artificial analisando cada articulação em tempo real.</p>
+          <p class="start-subheading">Inteligência Artificial + Rastreamento Óptico de Barra em Tempo Real.</p>
           
           <button id="btn-goto-challenge" class="btn-cyber-primary btn-giant">
             <span class="material-symbols-outlined btn-icon-large">play_arrow</span>
@@ -79,44 +79,32 @@
     <section id="screen-challenge" class="spa-screen" aria-label="Regras do Desafio">
       <div class="challenge-container">
         <div class="challenge-card">
-          <div class="challenge-badge">MISSÃO DE ESTANDE</div>
-          <h2 class="challenge-title">FAÇA 10 REPETIÇÕES COM PELO MENOS 90% DE PRECISÃO PARA GANHAR!</h2>
+          <div class="challenge-badge">MISSÃO DO ESTANDE • FLEXÃO DE COTOVELO</div>
+          <h2 class="challenge-title">FAÇA 10 REPETIÇÕES COM A BARRA E ATINJA MAIS DE 90% DE PRECISÃO!</h2>
 
           <div class="rules-grid">
             <div class="rule-item">
-              <span class="material-symbols-outlined rule-icon">repeat</span>
+              <span class="material-symbols-outlined rule-icon" style="color: #00ff88;">fitness_center</span>
+              <div class="rule-text">
+                <h3>Barra com Marcadores</h3>
+                <p>Segure a barra com as bolas coloridas (Verde de um lado e Vermelha do outro).</p>
+              </div>
+            </div>
+
+            <div class="rule-item">
+              <span class="material-symbols-outlined rule-icon" style="color: #00f2fe;">repeat</span>
               <div class="rule-text">
                 <h3>10 Repetições Perfeitas</h3>
-                <p>Complete o ciclo total de flexão e extensão da articulação escolhida.</p>
+                <p>Estenda totalmente os braços e flexione até o topo com controle e simetria.</p>
               </div>
             </div>
 
             <div class="rule-item">
-              <span class="material-symbols-outlined rule-icon">target</span>
+              <span class="material-symbols-outlined rule-icon" style="color: #ffe600;">balance</span>
               <div class="rule-text">
                 <h3>90%+ de Precisão</h3>
-                <p>Mantenha a postura e a amplitude corretas para pontuar alto na IA.</p>
+                <p>Mantenha a barra nivelada sem inclinar e complete a amplitude para pontuar alto.</p>
               </div>
-            </div>
-
-            <div class="rule-item">
-              <span class="material-symbols-outlined rule-icon">videocam</span>
-              <div class="rule-text">
-                <h3>Visão ao Vivo</h3>
-                <p>Posicione-se na webcam ou utilize um vídeo de demonstração do estande.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Configuração Rápida de Exercício e Entrada -->
-          <div class="challenge-options">
-            <div class="form-group-inline">
-              <label for="challenge-exercise-select">Exercício:</label>
-              <select id="challenge-exercise-select" class="cyber-select">
-                <option value="elbowFlexion">Flexão de Cotovelo / Rosca</option>
-                <option value="squat">Agachamento (Joelho)</option>
-                <option value="shoulderAbduction">Abdução de Ombro</option>
-              </select>
             </div>
           </div>
 
@@ -143,7 +131,7 @@
             <label class="cyber-checkbox debug-checkbox-inline" title="Salvo via cookie">
               <input type="checkbox" id="chk-disable-autocam">
               <span class="checkbox-custom"></span>
-              <span>Não abrir câmera automaticamente</span>
+              <span>Pausar câmera automática</span>
             </label>
             <button id="btn-debug-sim-rep" class="btn-debug-action">+1 Rep Simulada</button>
             <button id="btn-debug-sim-win" class="btn-debug-action">Testar Vitória</button>
@@ -190,7 +178,7 @@
       <!-- Status Banner de Instruções em Tempo Real -->
       <div id="game-status-banner" class="hud-status-banner">
         <span class="material-symbols-outlined status-pulse-icon">sensors</span>
-        <span id="game-status-text">Inicie a webcam ou selecione um vídeo para rodar o modelo.</span>
+        <span id="game-status-text">Segure a barra com os marcadores verde e vermelho e inicie o movimento.</span>
       </div>
 
       <!-- Layout Principal da Arena (Viewport + Sidebar de Cálculos) -->
@@ -235,10 +223,10 @@
           </footer>
         </main>
 
-        <!-- Sidebar Lateral de Configuração de Cálculos e Vetores (Gaveta Deslizante) -->
+        <!-- Sidebar Lateral de Configuração de Cálculos e Vetores -->
         <aside id="game-sidebar" class="game-sidebar-drawer">
           <div class="sidebar-header">
-            <h3><span class="material-symbols-outlined">tune</span> Configuração de Cálculos</h3>
+            <h3><span class="material-symbols-outlined">tune</span> Configurações e Calibração</h3>
             <button id="btn-close-sidebar" class="btn-icon-only">&times;</button>
           </div>
 
@@ -247,16 +235,25 @@
             <section id="debug-sidebar-card" class="sidebar-card debug-card-highlight" style="display: none;">
               <h4>Telemetria Debug (1234)</h4>
               <div class="debug-info-grid">
-                <div><strong>Exercício:</strong> <span id="debug-exercise-val">elbowFlexion</span></div>
-                <div><strong>Ângulo Atual:</strong> <span id="debug-angle-val">180°</span></div>
+                <div><strong>Exercício:</strong> <span>Elbow Flexion (Barra)</span></div>
+                <div><strong>Ângulo Médio:</strong> <span id="debug-angle-val">160°</span></div>
                 <div><strong>Fase:</strong> <span id="debug-phase-val">extended</span></div>
-                <div><strong>Modo:</strong> <span id="debug-mode-val" style="color: #00ff88; font-weight: 900;">ILIMITADO (∞)</span></div>
+                <div><strong>Status Barra:</strong> <span id="debug-bar-val">Nivelada</span></div>
               </div>
             </section>
 
-            <!-- Card 1: Fonte de Entrada -->
+            <!-- Card 1: Fonte de Entrada & Modelo de IA -->
             <section class="sidebar-card">
-              <h4>Fonte de Entrada</h4>
+              <h4>Fonte de Entrada & IA</h4>
+              <div class="form-group">
+                <label for="ai-model-select">Modelo de IA (Pose):</label>
+                <select id="ai-model-select" class="cyber-select">
+                  <option value="lite">Lite (Otimizado - 8GB RAM / 60 FPS)</option>
+                  <option value="full">Full (Equilibrado)</option>
+                  <option value="heavy">Heavy (Alta Precisão - PC Forte)</option>
+                </select>
+              </div>
+
               <div class="form-group">
                 <label for="source-mode-select">Modo de Entrada:</label>
                 <select id="source-mode-select" class="cyber-select">
@@ -276,27 +273,27 @@
 
             <!-- Card 2: Opções de Renderização dos Vetores -->
             <section class="sidebar-card">
-              <h4>Vetores & Visualização 3D</h4>
+              <h4>Rastreamento e Vetores</h4>
               <div class="checkbox-stack">
+                <label class="cyber-checkbox">
+                  <input type="checkbox" id="chk-bar-tracker" checked>
+                  <span class="checkbox-custom"></span>
+                  <span>Rastreador de Barra (Verde/Vermelho)</span>
+                </label>
                 <label class="cyber-checkbox">
                   <input type="checkbox" id="chk-connectors" checked>
                   <span class="checkbox-custom"></span>
-                  <span>Esqueleto Neon Glow</span>
-                </label>
-                <label class="cyber-checkbox">
-                  <input type="checkbox" id="chk-vectors" checked>
-                  <span class="checkbox-custom"></span>
-                  <span>Vetores Laser Direcionais</span>
+                  <span>Esqueleto Neon (MediaPipe Lite)</span>
                 </label>
                 <label class="cyber-checkbox">
                   <input type="checkbox" id="chk-angles" checked>
                   <span class="checkbox-custom"></span>
-                  <span>Ângulos Articulares em Tempo Real</span>
+                  <span>Ângulos dos Cotovelos</span>
                 </label>
                 <label class="cyber-checkbox">
                   <input type="checkbox" id="chk-ids">
                   <span class="checkbox-custom"></span>
-                  <span>IDs dos 33 Landmarks</span>
+                  <span>IDs dos Landmarks</span>
                 </label>
                 <label class="cyber-checkbox">
                   <input type="checkbox" id="chk-3d">
@@ -321,7 +318,7 @@
                   </thead>
                   <tbody id="landmarks-tbody">
                     <tr>
-                      <td colspan="4">Aguardando modelo MediaPipe...</td>
+                      <td colspan="4">Aguardando câmera...</td>
                     </tr>
                   </tbody>
                 </table>
@@ -336,7 +333,6 @@
     <!-- MODAL DE VITÓRIA / CELEBRAÇÃO DE ESTANDE   -->
     <!-- ========================================== -->
     <div id="modal-victory" class="modal-overlay" role="dialog" aria-modal="true">
-      <img id="victory-confetti-img" src="/confetti.gif" alt="Confetti Comemoração" class="victory-confetti-gif">
       <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
 
       <div class="victory-card-glow">
@@ -345,7 +341,7 @@
         </div>
         
         <h2 class="victory-title">DESAFIO CONCLUÍDO!</h2>
-        <p class="victory-subtitle">Parabéns! Você alcançou o objetivo com performance incrível!</p>
+        <p class="victory-subtitle">Parabéns! Você alcançou o objetivo com excelente precisão biomecânica!</p>
 
         <div class="victory-stats-grid">
           <div class="v-stat-box">

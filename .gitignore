@@ -7,12 +7,9 @@ dist/
 build/
 .vite/
 
-# Local Raw Assets & Prototypes (Active static assets are in public/)
+# Local Raw Assets & Temporary Files
 assets/
 prototipo/
-/pose_landmarker_heavy.task
-
-# Compressed Archives & Temporary Files
 *.zip
 *.tar.gz
 *.rar
@@ -25,12 +22,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Environment & Local Configuration
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Environment & Local Secrets (preserve project preset .env files)
+.env*.local
+*.local
 
 # Editor & IDE Directories
 .vscode/
@@ -46,3 +40,4 @@ pnpm-debug.log*
 # OS System Files
 .DS_Store
 Thumbs.db
+Desktop.ini

@@ -1,7 +1,6 @@
 /**
- * Game Engine para FisioPlus - SPA Gamificada de Estande
- * Gerencia os estados do jogo, contagem de repetições biomecânicas, precisão %,
- * mensagens flutuantes, modo debug ilimitado (código 1234) e gatilho de vitória.
+ * Game Engine para FisioPlus - Desafio de Flexão de Cotovelo com Barra no Estande
+ * Gerencia repetições, precisão postural em tempo real, simetria da barra e condições de vitória.
  */
 
 export class GameEngine {
@@ -11,22 +10,24 @@ export class GameEngine {
     // Modo Debug Ativo (Gatilho via sequência 1234)
     this.isDebugMode = false;
 
-    // Configurações e Meta do Desafio
+    // Configurações do Desafio de Estande
     this.targetReps = 10;
     this.minAccuracyToWin = 90; // 90%
-    this.selectedExercise = 'elbowFlexion'; // 'elbowFlexion' | 'squat' | 'shoulderAbduction'
+    this.selectedExercise = 'elbowFlexion'; // Foco exclusivo na Flexão de Cotovelo
     
-    // Estado Atual da Sessão de Jogo
+    // Estado Atual da Sessão
     this.repsCount = 0;
     this.currentAccuracy = 100;
     this.accuracyHistory = [];
-    this.repState = 'extended'; // 'extended' | 'flexed'
-    this.lastAngle = 180;
+    this.repState = 'extended'; // 'extended' | 'flexing' | 'flexed' | 'extending'
+    this.lastAngle = 160;
+    this.repProgress = 0; // 0% a 100% da repetição atual
+    this.isBarLevel = true;
     
-    // Popups flutuantes no canvas (ex: "+1 REP!", "EXCELENTE!", "95% PRECISÃO")
+    // Mensagens flutuantes no canvas
     this.floatingMessages = [];
     
-    // Efeitos sonoros acionados via Web Audio API
+    // Efeitos sonoros via Web Audio API
     this.audioCtx = null;
     
     // Callbacks de UI
@@ -57,7 +58,7 @@ export class GameEngine {
       const gain = this.audioCtx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, this.audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
 
       osc.connect(gain);
@@ -65,7 +66,7 @@ export class GameEngine {
       osc.start();
       osc.stop(this.audioCtx.currentTime + duration);
     } catch (e) {
-      // Áudio ignorado caso haja restrição do navegador
+      // Ignora erro de áudio
     }
   }
 
@@ -80,15 +81,10 @@ export class GameEngine {
 
   /**
    * Ativa ou desativa o Modo Debug (Código Secret 1234)
-   * No modo Debug, a contagem de repetições é ilimitada para teste contínuo de iluminação/câmera.
    */
   setDebugMode(enabled) {
     this.isDebugMode = enabled;
-    if (enabled) {
-      this.targetReps = Infinity;
-    } else {
-      this.targetReps = 10;
-    }
+    this.targetReps = enabled ? Infinity : 10;
 
     if (this.onDebugChange) {
       this.onDebugChange(enabled);
@@ -99,14 +95,11 @@ export class GameEngine {
         reps: this.repsCount,
         target: this.isDebugMode ? '∞' : this.targetReps,
         accuracy: this.currentAccuracy,
-        stateText: this.isDebugMode ? 'Modo Debug: Repetições Ilimitadas para ajuste de iluminação' : 'Aguardando movimento...'
+        stateText: this.isDebugMode ? 'Modo Debug: Repetições Ilimitadas' : 'Posicione-se com a barra e inicie a flexão...'
       });
     }
   }
 
-  /**
-   * Altera a tela visível da SPA
-   */
   setScreen(screenName) {
     this.currentScreen = screenName;
     if (this.onStateChange) {
@@ -115,13 +108,14 @@ export class GameEngine {
   }
 
   /**
-   * Reseta a sessão de jogo para um novo participante no estande
+   * Reseta a sessão de jogo para um novo participante
    */
   resetGame() {
     this.repsCount = 0;
     this.currentAccuracy = 100;
     this.accuracyHistory = [];
     this.repState = 'extended';
+    this.repProgress = 0;
     this.floatingMessages = [];
     
     if (this.onRepCount) {
@@ -129,7 +123,7 @@ export class GameEngine {
         reps: this.repsCount,
         target: this.isDebugMode ? '∞' : this.targetReps,
         accuracy: this.currentAccuracy,
-        stateText: 'Aguardando movimento...'
+        stateText: 'Segure a barra e inicie o movimento de flexão!'
       });
     }
   }
@@ -139,10 +133,10 @@ export class GameEngine {
    */
   simulateRepetition() {
     this.repsCount++;
-    this.currentAccuracy = 95;
+    this.currentAccuracy = 96;
     this.playBeep(880, 0.15, 'triangle');
     const targetText = this.isDebugMode ? '∞' : this.targetReps;
-    this.addFloatingMessage(`+1 REP DEBUG! (${this.repsCount}/${targetText})`, '#ff0055', 1.4);
+    this.addFloatingMessage(`+1 REP DEBUG! (${this.repsCount}/${targetText})`, '#00f2fe', 1.4);
 
     if (this.onRepCount) {
       this.onRepCount({
@@ -158,9 +152,6 @@ export class GameEngine {
     }
   }
 
-  /**
-   * Adiciona mensagem flutuante para ser renderizada sobre o vídeo/canvas
-   */
   addFloatingMessage(text, color = '#00f2fe', scale = 1.0) {
     this.floatingMessages.push({
       text,
@@ -172,74 +163,73 @@ export class GameEngine {
     });
   }
 
-  /**
-   * Atualiza a física e opacidade das mensagens flutuantes a cada frame
-   */
   updateFloatingMessages() {
     const now = Date.now();
     this.floatingMessages = this.floatingMessages.filter(msg => {
       const elapsed = (now - msg.createdAt) / 1000;
-      msg.yOffset = elapsed * 40;
-      msg.opacity = Math.max(0, 1 - elapsed / 1.5);
+      msg.yOffset = elapsed * 45;
+      msg.opacity = Math.max(0, 1 - elapsed / 1.4);
       return msg.opacity > 0;
     });
   }
 
   /**
-   * Processa ângulos articulada calculados pelo vectorMath
+   * Processa os ângulos articulares e dados da barra
    */
-  processJointAngles(jointAngles) {
+  processElbowFlexion(jointAngles, barState = null) {
     if (this.currentScreen !== 'game' || !jointAngles) return null;
 
-    let targetAngle = 0;
-    let flexThreshold = 80;   // Ângulo para flexão máxima
-    let extendThreshold = 150;// Ângulo para extensão máxima
+    // Ângulo alvo de flexão de cotovelo
+    const targetAngle = jointAngles.avgElbow || Math.max(jointAngles.leftElbow || 0, jointAngles.rightElbow || 0);
+    if (targetAngle <= 0) return null;
 
-    if (this.selectedExercise === 'elbowFlexion') {
-      targetAngle = Math.max(jointAngles.leftElbow || 0, jointAngles.rightElbow || 0);
-      flexThreshold = 80;
-      extendThreshold = 150;
-    } else if (this.selectedExercise === 'squat') {
-      targetAngle = Math.min(jointAngles.leftKnee || 180, jointAngles.rightKnee || 180);
-      flexThreshold = 95;
-      extendThreshold = 160;
-    } else {
-      targetAngle = Math.max(jointAngles.leftShoulder || 0, jointAngles.rightShoulder || 0);
-      flexThreshold = 110;
-      extendThreshold = 40;
-    }
+    const flexThreshold = 75;    // Ângulo mínimo para flexão completa
+    const extendThreshold = 145; // Ângulo para extensão completa
 
-    if (targetAngle === 0) return null;
+    // Cálculo do progresso da repetição (0% a 100%)
+    const clampedAngle = Math.max(flexThreshold, Math.min(extendThreshold, targetAngle));
+    this.repProgress = Math.round(((extendThreshold - clampedAngle) / (extendThreshold - flexThreshold)) * 100);
 
-    // Cálculo da Qualidade da Forma (Precisão Postural)
+    // Avaliação de Precisão Postural (Biomecânica e Simetria da Barra)
     let frameAccuracy = 100;
-    if (targetAngle < 30 || targetAngle > 175) {
-      frameAccuracy = 95;
+
+    // Penalidade se a barra estiver muito inclinada
+    if (barState && barState.detected && !barState.isLevel) {
+      frameAccuracy -= 15;
+      this.isBarLevel = false;
+    } else {
+      this.isBarLevel = true;
     }
+
+    // Penalidade se houver assimetria exagerada entre os braços
+    if (jointAngles.elbowDiff > 25) {
+      frameAccuracy -= 10;
+    }
+
     this.accuracyHistory.push(frameAccuracy);
-    if (this.accuracyHistory.length > 60) this.accuracyHistory.shift();
+    if (this.accuracyHistory.length > 50) this.accuracyHistory.shift();
 
     const sumAcc = this.accuracyHistory.reduce((a, b) => a + b, 0);
     this.currentAccuracy = Math.round(sumAcc / this.accuracyHistory.length);
 
-    // Lógica do Contador de Repetições
-    let stateText = 'Mantenha o movimento constante';
+    // Lógica do Ciclo de Repetições
+    let stateText = 'Mantenha a barra alinhada e flexione os braços';
     const targetText = this.isDebugMode ? '∞' : this.targetReps;
 
     if (this.repState === 'extended') {
       if (targetAngle <= flexThreshold) {
         this.repState = 'flexed';
-        stateText = 'Flexão máxima! Agora retorne...';
-        this.playBeep(587.33, 0.1, 'sine');
-        this.addFloatingMessage('EXCELENTE FLEXÃO!', '#00ff88', 1.1);
+        stateText = 'Excelente flexão! Agora desça com controle...';
+        this.playBeep(659.25, 0.1, 'sine');
+        this.addFloatingMessage('TOPO ALCANÇADO!', '#00ff88', 1.2);
       } else {
-        stateText = 'Flexione para realizar a repetição';
+        stateText = this.isBarLevel ? 'Suba a barra até o peito' : '⚠️ Alinhe a barra horizontalmente!';
       }
     } else if (this.repState === 'flexed') {
       if (targetAngle >= extendThreshold) {
         this.repState = 'extended';
         this.repsCount++;
-        stateText = `Repetição ${this.repsCount} concluída!`;
+        stateText = `Repetição ${this.repsCount} concluída com sucesso!`;
         
         this.playBeep(880, 0.15, 'triangle');
         this.addFloatingMessage(`+1 REP! (${this.repsCount}/${targetText})`, '#00f2fe', 1.4);
@@ -253,16 +243,16 @@ export class GameEngine {
           });
         }
 
-        // Verifica Condição de Vitória (Somente fora do modo Debug)
+        // Verifica vitória
         if (!this.isDebugMode && this.repsCount >= this.targetReps) {
           if (this.currentAccuracy >= this.minAccuracyToWin) {
             this.triggerVictory();
           } else {
-            this.addFloatingMessage('Tente novamente com mais de 90% de precisão!', '#ff0055', 1.2);
+            this.addFloatingMessage('Mantenha precisão acima de 90% para ganhar!', '#ff0055', 1.2);
           }
         }
       } else {
-        stateText = 'Estenda o membro completamente';
+        stateText = 'Estenda os braços até a posição inicial';
       }
     }
 
@@ -274,13 +264,12 @@ export class GameEngine {
       accuracy: this.currentAccuracy,
       targetAngle: targetAngle,
       repState: this.repState,
+      repProgress: this.repProgress,
+      isBarLevel: this.isBarLevel,
       stateText: stateText
     };
   }
 
-  /**
-   * Gatilho de Vitória com Confete e Telas do Estande
-   */
   triggerVictory() {
     this.playVictorySound();
     this.setScreen('victory');

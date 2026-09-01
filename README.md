@@ -1,4 +1,4 @@
-# FisioPlus - Analisador por IA de Exercícios Físicos
+# FisioPlus - Desafio Biomecânico Gamificado com IA
 
 <div align="center">
 
@@ -10,190 +10,149 @@
 <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/git.png" width="40" height="40" alt="Git" />
 <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/github.png" width="40" height="40" alt="GitHub" />
 
-<p><strong>Projeto Acadêmico - Feira de Cursos (FEC) da Universidade de Araraquara (UNIARA)</strong></p>
-<p><em>Status do Projeto: Protótipo em Fase Inicial de Testes e Adaptação</em></p>
+### 🏆 Projeto Acadêmico — Feira de Cursos (FEC) da Universidade de Araraquara (UNIARA)
+**Status do Projeto: ✅ 100% PRONTO E OTIMIZADO PARA A FEIRA**
 
 </div>
 
 ---
 
-## Sumário
+## 📋 Sumário
 
 - [Apresentação do Projeto](#apresentação-do-projeto)
-- [Contexto FEC - UNIARA](#contexto-fec---uniara)
-- [Caso de Uso: Análise da Rosca Direta](#caso-de-uso-análise-da-rosca-direta)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [O Desafio de Estande (FEC - UNIARA)](#o-desafio-de-estande-fec---uniara)
+- [Sistema de Rastreamento Óptico da Barra](#sistema-de-rastreamento-óptico-da-barra)
 - [Arquitetura de Módulos](#arquitetura-de-módulos)
-- [Funcionalidades Técnicas](#funcionalidades-técnicas)
-- [Métricas de Completude e Repetição](#métricas-de-completude-e-repetição)
-- [Requisitos de Ambiente](#requisitos-de-ambiente)
-- [Instalação e Execução](#instalação-e-execução)
-- [Configuração do Modelo MediaPipe](#configuração-do-modelo-mediapipe)
+- [Como Executar e Escolher os Modelos de IA](#como-executar-e-escolher-os-modelos-de-ia)
+- [Modo Debug do Estande (Código 1234)](#modo-debug-do-estande-código-1234)
+- [Guia do Operador para o Dia do Evento](#guia-do-operador-para-o-dia-do-evento)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
 - [Licença](#licença)
 
 ---
 
-## Apresentação do Projeto
+## 🎯 Apresentação do Projeto
 
-O **FisioPlus** é uma plataforma web interativa desenvolvida com Inteligência Artificial e Visão Computacional para análise biomecânica e avaliação da execução de exercícios físicos em tempo real.
+O **FisioPlus** é uma aplicação web gamificada e de alto impacto visual desenvolvida para demonstrar a união prática entre **Engenharia de Software, Inteligência Artificial, Fisioterapia e Educação Física**.
 
-O projeto utiliza a biblioteca **Google MediaPipe Pose Landmarker** combinada com fundamentos de matemática vetorial e trigonometria espacial para rastrear 33 pontos anatômicos corporais, calcular a amplitude de ângulos articulares e avaliar a qualidade biomecânica dos movimentos efetuados pelo usuário diante de uma câmera.
-
----
-
-## Contexto FEC - UNIARA
-
-Este aplicativo foi desenvolvido especialmente para apresentação na **Feira de Cursos (FEC)** da **UNIARA (Universidade de Araraquara)**. 
-
-O objetivo do estande é demonstrar na prática como conceitos interdisciplinares de Engenharia de Software, Ciência da Computação, Inteligência Artificial, Educação Física e Fisioterapia se unem para criar soluções tecnológicas acessíveis e de alto impacto no cotidiano esportivo e de reabilitação física.
-
-Durante a feira, o público poderá interagir com a aplicação ao vivo, executando movimentos em frente à webcam e recebendo feedback imediato na tela.
+Utilizando **Google MediaPipe Pose Landmarker** em conjunto com um **Rastreador Óptico por Cores em HSV**, o sistema avalia a execução biomecânica dos participantes em tempo real, calculando amplitudes articulares, contagem automática de repetições, velocidade, simetria postural e acurácia do movimento.
 
 ---
 
-## Caso de Uso: Análise da Rosca Direta
+## 🎪 O Desafio de Estande (FEC - UNIARA)
 
-Na fase atual de testes, o foco demonstrativo principal é o exercício de **Rosca Direta (Flexão de Cotovelo com Halter/Barra)**:
+O evento conta com o **Desafio da Flexão de Cotovelo / Rosca Direta com Barra**:
 
-1. **Rastreamento de Articulações**: Monitoramento contínuo dos pontos anatômicos do Ombro (11/12), Cotovelo (13/14) e Pulso (15/16).
-2. **Ângulo de Flexão do Cotovelo**: Cálculo em tempo real do ângulo articular entre os vetores `V_ombro_cotovelo` e `V_cotovelo_pulso`.
-3. **Fases do Movimento**:
-   - **Fase Excêntrica (Extensão Completa)**: Ângulo articular entre ~150° e ~175°.
-   - **Fase Concêntrica (Flexão Máxima)**: Ângulo articular entre ~35° e ~50°.
-4. **Indicador de Completude (%)**: Mapeamento do arco de movimento transformado em uma barra de progresso visual de 0% a 100% de amplitude percorrida por repetição.
-
----
-
-## Tecnologias Utilizadas
-
-| Tecnologia | Descrição | Ícone |
-| :--- | :--- | :---: |
-| **JavaScript (ES6+)** | Linguagem principal estruturada em módulos nativos (ESM) | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/javascript.png" width="30" height="30" alt="JavaScript" /> |
-| **HTML5 Canvas 2D** | Pipeline de renderização gráfica para esqueleto, vetores e arcos | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/html.png" width="30" height="30" alt="HTML5" /> |
-| **CSS3** | Estilização responsiva com foco em acessibilidade e alto contraste | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/css.png" width="30" height="30" alt="CSS3" /> |
-| **Vite** | Bundler e servidor de desenvolvimento para módulos ES | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/vite.png" width="30" height="30" alt="Vite" /> |
-| **Node.js** | Ambiente de execução para gerenciamento de dependências | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/node_js.png" width="30" height="30" alt="Node.js" /> |
-| **MediaPipe Tasks Vision** | Engine de inteligência artificial e visão computacional em WebAssembly | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/javascript.png" width="30" height="30" alt="MediaPipe" /> |
-| **Git / GitHub** | Controle de versão e repositório de código-fonte | <img src="https://raw.githubusercontent.com/marwin1991/profile-technology-icons/refs/heads/main/icons/git.png" width="30" height="30" alt="Git" /> |
+1. **Objetivo do Participante**: Realizar **10 repetições completas** com pelo menos **90% de precisão biomecânica**.
+2. **Ciclo de Movimento**:
+   - **Extensão Inicial / Excêntrica**: Braços estendidos ($\ge 145^\circ$).
+   - **Flexão de Pico / Concêntrica**: Barra elevada até a altura do peito ($\le 75^\circ$).
+3. **Avaliação em Tempo Real**:
+   - **Barra de Progresso Dinâmica**: Indicador visual lateral no canvas acompanhando cada repetição de 0% a 100%.
+   - **Detector de Simetria e Nível**: Penaliza a precisão caso o participante incline a barra (diferença $> 12^\circ$) ou puxe mais com um braço do que com o outro.
+4. **Celebração e Vitória**:
+   - Ao atingir as 10 repetições com $\ge 90\%$, o sistema dispara efeitos sonoros de vitória via Web Audio API e celebração com confetes neon na tela.
 
 ---
 
-## Arquitetura de Módulos
+## 🔬 Sistema de Rastreamento Óptico da Barra
 
-O código-fonte está organizado no diretório `src/` em módulos desacoplados:
+Para garantir precisão milimétrica mesmo em **webcams de baixo custo** e sob **iluminação desafiadora de feiras**, o projeto conta com uma barra física com duas bolas de isopor coloridas nas extremidades:
+
+- 🟢 **Ponta 1 (Verde)**: Rastreamento em faixa HSV ($70^\circ - 170^\circ$).
+- 🔴 **Ponta 2 (Vermelha)**: Rastreamento em faixa HSV ($335^\circ - 360^\circ$ e $0^\circ - 25^\circ$).
+- ⚡ **Fusão Sensorial & Filtro EMA**: Os centróides das cores refinam a posição dos punhos e antebraços, eliminando tremores (*jitter*) e calculando a linha laser da barra na tela.
+
+---
+
+## 🏗️ Arquitetura de Módulos
+
+O código-fonte está estruturado de forma modular e otimizada dentro de `src/`:
 
 ```
 src/
-├── main.js                   # Ponto de entrada, ciclo de vida da aplicação e manipulação do DOM
-├── poseLandmarkerService.js  # Abstração do MediaPipe PoseLandmarker (WASM, GPU/CPU fallback)
-├── vectorMath.js             # Kernel de cálculos vetoriais, produto escalar e ângulos articulares
-├── drawingRenderer.js        # Engine de desenho no Canvas HTML5 com padrão de alto contraste
-└── style.css                 # Sistema de estilos com suporte a temas escuros e acessibilidade WCAG
+├── main.js                   # Ponto de entrada, ciclo de vida da SPA e coordenação de renderização
+├── colorTracker.js           # Detector de cores HSV ultra-leve para a barra física (Verde / Vermelha)
+├── poseLandmarkerService.js  # Abstração do MediaPipe PoseLandmarker com suporte a Lite, Full e Heavy
+├── gameEngine.js             # Motor de regras, contagem de repetições, precisão, sons e vitórias
+├── vectorMath.js             # Kernel matemático de álgebra vetorial, produto escalar e ângulos 2D/3D
+├── drawingRenderer.js        # Engine gráfica Cyberpunk Neon para o Canvas HTML5 a 60 FPS
+└── style.css                 # Interface futurista neon de alto contraste para estande
 ```
 
-### Detalhamento dos Componentes
-
-1. **`src/poseLandmarkerService.js`**
-   - Gerencia a inicialização assíncrona dos binários WebAssembly (`FilesetResolver`).
-   - Carrega o modelo de aprendizado profundo `pose_landmarker_heavy.task`.
-   - Implementa tentativa dinâmica de aceleração por GPU (`GPU delegate`) com fallback automático para CPU em dispositivos não compatíveis.
-   - Suporta alteração dinâmica do modo de execução entre `VIDEO` e `IMAGE`.
-
-2. **`src/vectorMath.js`**
-   - Define a constante `LANDMARK_NAMES` com os 33 pontos anatômicos.
-   - `calculateVector(pA, pB, is3D)`: Computa o vetor direcional no espaço 2D ou 3D.
-   - `calculateAngle(pA, pB, pC, is3D)`: Determina o ângulo articular em graus com trigonometria vetorial.
-   - `calculateKeyJointAngles(landmarks, is3D)`: Extrai os ângulos-chave de cotovelos, joelhos e ombros.
-
-3. **`src/drawingRenderer.js`**
-   - Renderiza em tempo real o esqueleto, vetores direcionais (setas), arcos angulares e caixas telemétricas de alto contraste.
-
-4. **`src/main.js`**
-   - Controla o fluxo de dados da câmera/vídeo, cálculo de FPS, atualização da tabela de coordenadas e loop de inferência.
-
 ---
 
-## Funcionalidades Técnicas
+## 🚀 Como Executar e Escolher os Modelos de IA
 
-- **Rastreamento de 33 Landmarks de Pose**: Detecção tridimensional dos pontos corporais.
-- **Inspeção Biométrica em Tempo Real**: Tabela com coordenadas normalizadas (X, Y, Z) e percentual de visibilidade de cada ponto.
-- **Telemetria Angular**: Cálculo contínuo dos ângulos das principais articulações.
-- **Múltiplos Modos de Captura**: Suporte a webcam ao vivo, upload de arquivos de vídeo e fotos estáticas.
-- **Aceleração Hardware**: Processamento WebGL/WASM 100% local com baixa latência.
+O projeto está otimizado para rodar com **60 FPS fluidos em máquinas com apenas 8GB de RAM**. Você pode escolher entre 3 modelos de IA:
 
----
+### 1. Modelos Disponíveis
 
-## Métricas de Completude e Repetição
+| Modelo | Arquivo | Tamanho | Recomendação |
+| :--- | :--- | :--- | :--- |
+| **`lite`** | `pose_landmarker_lite.task` | **5.7 MB** | **Padrão para a Feira (8GB RAM / Webcam de entrada / 60 FPS)** |
+| **`full`** | `pose_landmarker_full.task` | **9.3 MB** | Notebooks intermediários |
+| **`heavy`** | `pose_landmarker_heavy.task` | **30.6 MB** | Desktops de alta performance com GPU dedicada |
 
-Para proporcionar uma experiência didática e atraente na FEC - UNIARA, o sistema prevê:
-
-- **Gráfico / Barra de Completude da Repetição (%)**: Medidor dinâmico que varia de 0% a 100% conforme a amplitude do movimento de rosca direta é realizada.
-- **Contador de Repetições Válidas**: Algoritmo de máquina de estados que contabiliza uma repetição concluída ao atingir o pico de flexão e retornar à extensão completa.
-- **Indicador de Fase do Exercício**: Feedback visual apontando o estado atual (*Subida / Flexão Concêntrica* ou *Descida / Extensão Excêntrica*).
-
----
-
-## Requisitos de Ambiente
-
-Para executar o projeto localmente:
-
-- **Node.js**: Versão 18.0.0 ou superior.
-- **npm**: Versão 9.0.0 ou superior (acompanha o Node.js).
-- Navegador moderno com suporte a WebGL e WebAssembly (Google Chrome, Microsoft Edge, Mozilla Firefox ou Safari).
-
----
-
-## Instalação e Execução
-
-### 1. Clonar o Repositório
+### 2. Comandos de Inicialização (Terminal)
 
 ```bash
-git clone https://github.com/usuario/fisioplus-pose-landmarker.git
-cd fisioplus-pose-landmarker
-```
-
-### 2. Instalar Dependências
-
-```bash
+# Instalar dependências (apenas na primeira vez)
 npm install
-```
 
-### 3. Iniciar o Servidor de Desenvolvimento
-
-```bash
+# 🟢 Iniciar em Modo LITE (Recomendado para a Feira)
 npm run dev
+# ou
+npm run dev:lite
+
+# 🟡 Iniciar em Modo FULL
+npm run dev:full
+
+# 🔴 Iniciar em Modo HEAVY
+npm run dev:heavy
 ```
 
-O servidor local estará acessível no endereço: `http://localhost:3000/`.
-
-### 4. Gerar Build de Produção
-
-```bash
-npm run build
-```
-
-Os arquivos otimizados serão gerados no diretório `dist/`.
-
-### 5. Visualizar o Build de Produção Localmente
-
-```bash
-npm run preview
-```
+### 3. Seleção via URL ou Interface
+- **Via URL**: Acesse diretamente adicionando `?model=lite`, `?model=full` ou `?model=heavy`.
+- **Pela Interface**: Clique no botão **"Cálculos"** no topo da tela do jogo e alterne o modelo no seletor da barra lateral sem precisar reiniciar a aplicação.
 
 ---
 
-## Configuração do Modelo MediaPipe
+## 🛠️ Modo Debug do Estande (Código 1234)
 
-- **Arquivo do Modelo**: `pose_landmarker_heavy.task`
-- **Localização**: Raiz do projeto / diretório público (`public/`).
-- **Parâmetros Padrão de Confiança**:
-  - `minPoseDetectionConfidence`: 0.5 (50%)
-  - `minPosePresenceConfidence`: 0.5 (50%)
-  - `minTrackingConfidence`: 0.5 (50%)
-  - `delegate`: `GPU` (com fallback para `CPU`)
+Para testes antes de abrir para os participantes:
+- Digite a sequência **`1234`** no teclado a qualquer momento para ativar o **Modo Debug**.
+- **Recursos do Debug**:
+  - Repetições Ilimitadas ($\infty$) para ajuste fino de iluminação e posição da câmera.
+  - Botão de simular repetição manual (`+1 Rep`).
+  - Botão de testar tela de vitória (`Testar Vitória`).
+  - Opção de pausar câmera automática salva via cookie.
 
 ---
 
-## Licença
+## 💡 Guia do Operador para o Dia do Evento
 
-Este projeto é disponibilizado sob a licença MIT. Consulte o arquivo `LICENSE` para mais detalhes.
+1. **Posicionamento do Participante**:
+   - A pessoa deve ficar **DE FRENTE** para a câmera (não de lado), a uma distância de **1,5 a 2 metros**.
+   - Segurar a barra na largura dos ombros com as palmas voltadas para cima (pegada supinada).
+2. **Iluminação**:
+   - Posicione uma luz frontal suave (ex: ring light ou luminária LED) voltada para o participante e para a barra.
+3. **Navegador**:
+   - Abra no **Google Chrome** ou **Microsoft Edge** e pressione **`F11`** para tela cheia.
+   - Certifique-se de que a *Aceleração por Hardware* está ativa em `chrome://settings/system`.
+
+---
+
+## 📦 Tecnologias Utilizadas
+
+- **JavaScript (ES6+ / ESM)**: Código limpo e modular sem frameworks pesados.
+- **HTML5 Canvas 2D**: Renderização com shaders neon e baixa sobrecarga de CPU.
+- **MediaPipe Tasks Vision (WebAssembly / WebGL)**: IA de rastreamento postural em tempo real.
+- **Web Audio API**: Feedback sonoro nativo sintetizado em tempo de execução.
+- **Vite**: Bundler ultra rápido com HMR.
+
+---
+
+## 📄 Licença
+
+Este projeto é desenvolvido para fins acadêmicos e educacionais na **UNIARA - Universidade de Araraquara**. Disponibilizado sob a licença MIT.

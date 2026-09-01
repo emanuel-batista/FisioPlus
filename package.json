@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:lite": "vite --mode lite",
+    "dev:full": "vite --mode full",
+    "dev:heavy": "vite --mode heavy",
     "build": "vite build",
     "preview": "vite preview"
   },

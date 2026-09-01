@@ -1,5 +1,5 @@
 /**
- * Módulo de cálculos vetoriais e de ângulos anatômicos para MediaPipe Pose Landmarks.
+ * Módulo de cálculos vetoriais e de ângulos anatômicos para MediaPipe Pose Landmarks e Marcadores da Barra.
  */
 
 // Nomes dos 33 landmarks do MediaPipe Pose
@@ -44,12 +44,11 @@ export const LANDMARK_NAMES = [
  */
 export function calculateVector(pA, pB, is3D = false) {
   if (!pA || !pB) return { x: 0, y: 0, z: 0 };
-  const vec = {
+  return {
     x: pB.x - pA.x,
     y: pB.y - pA.y,
-    z: is3D ? (pB.z - pA.z) : 0
+    z: is3D ? ((pB.z || 0) - (pA.z || 0)) : 0
   };
-  return vec;
 }
 
 /**
@@ -60,7 +59,7 @@ export function vectorMagnitude(v) {
 }
 
 /**
- * Normaliza um vetor (transforma em vetor unitário)
+ * Normaliza um vetor
  */
 export function normalizeVector(v) {
   const mag = vectorMagnitude(v);
@@ -74,7 +73,7 @@ export function normalizeVector(v) {
 
 /**
  * Calcula o ângulo em graus no vértice B formado pelos pontos A -> B -> C.
- * Ex: A = Ombro, B = Cotovelo (vértice), C = Pulso.
+ * Ex: A = Ombro, B = Cotovelo (vértice), C = Pulso ou Marcador de Cor da Barra.
  */
 export function calculateAngle(pA, pB, pC, is3D = false) {
   if (!pA || !pB || !pC) return 0;
@@ -89,7 +88,6 @@ export function calculateAngle(pA, pB, pC, is3D = false) {
   if (magBA === 0 || magBC === 0) return 0;
 
   let cosAngle = dotProduct / (magBA * magBC);
-  // Limita o valor entre -1 e 1 para evitar NaN devido a imprecisão de ponto flutuante
   cosAngle = Math.max(-1, Math.min(1, cosAngle));
 
   const angleRad = Math.acos(cosAngle);
@@ -99,17 +97,55 @@ export function calculateAngle(pA, pB, pC, is3D = false) {
 }
 
 /**
- * Retorna os ângulos articulares chave para análise postural e biomecânica.
+ * Calcula os ângulos articulares principais, integrando os marcadores da barra quando presentes
  */
-export function calculateKeyJointAngles(landmarks, is3D = false) {
+export function calculateKeyJointAngles(landmarks, is3D = false, barState = null) {
   if (!landmarks || landmarks.length < 33) return null;
 
+  // Pontos de referência corporais
+  const shoulderL = landmarks[11];
+  const shoulderR = landmarks[12];
+  const elbowL = landmarks[13];
+  const elbowR = landmarks[14];
+  let wristL = landmarks[15];
+  let wristR = landmarks[16];
+
+  // Se a barra estiver detectada com os marcadores de cor, funde os pontos para máxima precisão
+  if (barState && barState.detected) {
+    if (barState.greenPos && barState.redPos) {
+      // Determina qual bola está mais próxima do lado esquerdo/direito do usuário
+      if (barState.greenPos.x < barState.redPos.x) {
+        // Verde à esquerda da imagem (braço direito da pessoa em modo espelho)
+        wristL = barState.redPos;
+        wristR = barState.greenPos;
+      } else {
+        wristL = barState.greenPos;
+        wristR = barState.redPos;
+      }
+    }
+  }
+
+  const leftElbow = calculateAngle(shoulderL, elbowL, wristL, is3D);
+  const rightElbow = calculateAngle(shoulderR, elbowR, wristR, is3D);
+
+  // Média dos dois cotovelos para flexão bimanual com barra
+  const avgElbow = (leftElbow > 0 && rightElbow > 0)
+    ? Math.round(((leftElbow + rightElbow) / 2) * 10) / 10
+    : (leftElbow || rightElbow || 0);
+
+  // Diferença de amplitude entre os dois braços (Simetria)
+  const elbowDiff = (leftElbow > 0 && rightElbow > 0)
+    ? Math.abs(leftElbow - rightElbow)
+    : 0;
+
   return {
-    leftElbow: calculateAngle(landmarks[11], landmarks[13], landmarks[15], is3D),   // Ombro, Cotovelo, Pulso Esquerdo
-    rightElbow: calculateAngle(landmarks[12], landmarks[14], landmarks[16], is3D),  // Ombro, Cotovelo, Pulso Direito
-    leftKnee: calculateAngle(landmarks[23], landmarks[25], landmarks[27], is3D),    // Quadril, Joelho, Tornozelo Esquerdo
-    rightKnee: calculateAngle(landmarks[24], landmarks[26], landmarks[28], is3D),   // Quadril, Joelho, Tornozelo Direito
-    leftShoulder: calculateAngle(landmarks[23], landmarks[11], landmarks[13], is3D),// Quadril, Ombro, Cotovelo Esquerdo
-    rightShoulder: calculateAngle(landmarks[24], landmarks[12], landmarks[14], is3D)// Quadril, Ombro, Cotovelo Direito
+    leftElbow,
+    rightElbow,
+    avgElbow,
+    elbowDiff,
+    leftKnee: calculateAngle(landmarks[23], landmarks[25], landmarks[27], is3D),
+    rightKnee: calculateAngle(landmarks[24], landmarks[26], landmarks[28], is3D),
+    leftShoulder: calculateAngle(landmarks[23], landmarks[11], landmarks[13], is3D),
+    rightShoulder: calculateAngle(landmarks[24], landmarks[12], landmarks[14], is3D)
   };
 }

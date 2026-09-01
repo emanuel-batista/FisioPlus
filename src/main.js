@@ -1,10 +1,12 @@
 import { PoseLandmarkerService } from "./poseLandmarkerService.js";
+import { ColorTracker } from "./colorTracker.js";
 import { drawPoseResults } from "./drawingRenderer.js";
 import { LANDMARK_NAMES, calculateKeyJointAngles } from "./vectorMath.js";
 import { GameEngine } from "./gameEngine.js";
 
 // Instâncias Globais da Aplicação
 const poseService = new PoseLandmarkerService();
+const colorTracker = new ColorTracker();
 const gameEngine = new GameEngine();
 
 // Referências aos Elementos da SPA
@@ -30,9 +32,9 @@ const btnDebugSimRep = document.getElementById("btn-debug-sim-rep");
 const btnDebugSimWin = document.getElementById("btn-debug-sim-win");
 const btnDebugExit = document.getElementById("btn-debug-exit");
 const debugSidebarCard = document.getElementById("debug-sidebar-card");
-const debugExerciseVal = document.getElementById("debug-exercise-val");
 const debugAngleVal = document.getElementById("debug-angle-val");
 const debugPhaseVal = document.getElementById("debug-phase-val");
+const debugBarVal = document.getElementById("debug-bar-val");
 
 // Buffer para captura da sequência de teclas "1234"
 let keySequenceBuffer = "";
@@ -61,7 +63,7 @@ const btnNextParticipant = document.getElementById("btn-next-participant");
 const webcamVideo = document.getElementById("webcam-video");
 const staticImage = document.getElementById("static-image");
 const outputCanvas = document.getElementById("output-canvas");
-const canvasCtx = outputCanvas.getContext("2d");
+const canvasCtx = outputCanvas.getContext("2d", { alpha: false }); // Desativa canal alfa para maior velocidade de render
 const canvasOverlayMsg = document.getElementById("canvas-overlay-msg");
 const overlayText = document.getElementById("overlay-text");
 const btnTogglePlay = document.getElementById("btn-toggle-play");
@@ -69,13 +71,13 @@ const videoUploadInput = document.getElementById("video-upload");
 const imageUploadInput = document.getElementById("image-upload");
 
 // Seletores de Configurações
-const challengeExerciseSelect = document.getElementById("challenge-exercise-select");
+const aiModelSelect = document.getElementById("ai-model-select");
 const sourceModeSelect = document.getElementById("source-mode-select");
 const cameraSelect = document.getElementById("camera-select");
 
-// Checkboxes de Opções de Vetores
+// Checkboxes de Opções de Renderização
 const chkConnectors = document.getElementById("chk-connectors");
-const chkVectors = document.getElementById("chk-vectors");
+const chkBarTracker = document.getElementById("chk-bar-tracker");
 const chkAngles = document.getElementById("chk-angles");
 const chkIds = document.getElementById("chk-ids");
 const chk3D = document.getElementById("chk-3d");
@@ -87,13 +89,14 @@ let isRunning = false;
 let animationFrameId = null;
 let currentSourceMode = "webcam";
 let activeStream = null;
+let frameCounter = 0;
 
 // Confetes Engine
 let confettiParticles = [];
 let confettiAnimationFrame = null;
 
 /**
- * Utilitários de Leitura e Escrita de Cookies
+ * Utilitários de Cookies
  */
 function setCookie(name, value, days = 365) {
   const d = new Date();
@@ -111,6 +114,24 @@ function getCookie(name) {
   return null;
 }
 
+let currentAiModel = getActiveModel();
+
+/**
+ * Retorna o modelo ativo com prioridade: URL (?model=...) -> ENV (VITE_POSE_MODEL) -> 'lite'
+ */
+function getActiveModel() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramModel = urlParams.get("model");
+  if (paramModel && ["lite", "full", "heavy"].includes(paramModel.toLowerCase())) {
+    return paramModel.toLowerCase();
+  }
+  const envModel = import.meta.env.VITE_POSE_MODEL;
+  if (envModel && ["lite", "full", "heavy"].includes(envModel.toLowerCase())) {
+    return envModel.toLowerCase();
+  }
+  return "lite";
+}
+
 /**
  * Inicialização Principal ao carregar o DOM
  */
@@ -121,24 +142,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupKeySequenceDetector();
   initTableRows();
 
+  // Sincroniza seletor da UI com o modelo ativo
+  if (aiModelSelect) {
+    aiModelSelect.value = currentAiModel;
+  }
+
   // 1. Carregamento dos modelos
-  updateLoadingProgress(30, "Mapeando dispositivos de vídeo...");
+  updateLoadingProgress(35, "Mapeando dispositivos de vídeo...");
   await checkCameraAvailability();
 
-  updateLoadingProgress(65, "Inicializando motor de visão computacional MediaPipe...");
-  await loadMediaPipeModel();
+  const modelLabels = { lite: "Lite (Ultra Rápido)", full: "Full (Equilibrado)", heavy: "Heavy (Alta Precisão)" };
+  updateLoadingProgress(70, `Carregando modelo ${modelLabels[currentAiModel] || currentAiModel}...`);
+  await loadMediaPipeModel(currentAiModel);
 
   updateLoadingProgress(100, "Pronto para o evento!");
   
-  // Transição para a Tela Inicial (Start Screen)
+  // Transição para a Tela Inicial
   setTimeout(() => {
     gameEngine.setScreen('start');
-  }, 600);
+  }, 500);
 });
 
-/**
- * Inicializa o aviso de cookies e recupera a preferência salva
- */
 function initCookieSystem() {
   const consent = getCookie("fisioplus_cookie_consent");
   if (!consent && cookieBanner) {
@@ -181,12 +205,8 @@ function setupKeySequenceDetector() {
   });
 }
 
-/**
- * Ativa o Modo Debug (1234) com repetições ilimitadas para testes de iluminação e posicionamento de câmera
- */
 function activateDebugMode() {
   gameEngine.setDebugMode(true);
-  gameEngine.selectedExercise = challengeExerciseSelect ? challengeExerciseSelect.value : 'elbowFlexion';
   gameEngine.resetGame();
   gameEngine.setScreen('game');
 
@@ -196,15 +216,12 @@ function activateDebugMode() {
   if (hudRepsTotal) hudRepsTotal.textContent = "/ ∞";
 
   if (chkDisableAutocam && chkDisableAutocam.checked) {
-    if (gameStatusText) gameStatusText.textContent = "MODO DEBUG ATIVO (1234): Câmera automática pausada por preferência de cookie.";
+    if (gameStatusText) gameStatusText.textContent = "MODO DEBUG ATIVO (1234): Câmera pausada.";
   } else {
-    if (gameStatusText) gameStatusText.textContent = "MODO DEBUG ATIVO (1234): Repetições Ilimitadas (∞) ativadas para ajuste de iluminação e câmera.";
+    if (gameStatusText) gameStatusText.textContent = "MODO DEBUG ATIVO (1234): Repetições Ilimitadas (∞).";
   }
 }
 
-/**
- * Desativa o Modo Debug
- */
 function deactivateDebugMode() {
   gameEngine.setDebugMode(false);
   if (debugBanner) debugBanner.style.display = "none";
@@ -212,9 +229,6 @@ function deactivateDebugMode() {
   if (hudRepsTotal) hudRepsTotal.textContent = "/ 10";
 }
 
-/**
- * Configura os callbacks da Engine do Jogo
- */
 function setupGameEngineCallbacks() {
   gameEngine.onStateChange = (screenName) => {
     Object.keys(screens).forEach(key => {
@@ -228,13 +242,12 @@ function setupGameEngineCallbacks() {
     if (screenName === 'game') {
       resizeCanvas();
 
-      // Verifica preferência de não abrir câmera automaticamente (salva via cookie)
       const disableAutocam = chkDisableAutocam && chkDisableAutocam.checked;
 
       if (!isRunning && currentSourceMode === 'webcam') {
         if (disableAutocam) {
           if (canvasOverlayMsg) canvasOverlayMsg.style.display = "flex";
-          if (overlayText) overlayText.textContent = "Câmera automática desativada (Modo Debug). Clique em 'Iniciar Câmera' para testar.";
+          if (overlayText) overlayText.textContent = "Câmera automática desativada (Debug). Clique em 'Iniciar Câmera'.";
         } else {
           startWebcam();
         }
@@ -264,11 +277,7 @@ function setupGameEngineCallbacks() {
   };
 }
 
-/**
- * Registra os Listeners de Eventos de Botões e UI
- */
 function setupEventListeners() {
-  // Banner de Cookies
   if (btnAcceptCookies) {
     btnAcceptCookies.addEventListener("click", () => {
       setCookie("fisioplus_cookie_consent", "true", 365);
@@ -276,14 +285,12 @@ function setupEventListeners() {
     });
   }
 
-  // Checkbox de Não Abrir Câmera Automática (Salvo em Cookie)
   if (chkDisableAutocam) {
     chkDisableAutocam.addEventListener("change", (e) => {
       setCookie("fisioplus_disable_autocam", e.target.checked ? "true" : "false", 365);
     });
   }
 
-  // Navegação da SPA
   if (btnGotoChallenge) {
     btnGotoChallenge.addEventListener("click", () => {
       gameEngine.initAudio();
@@ -293,7 +300,6 @@ function setupEventListeners() {
 
   if (btnStartGame) {
     btnStartGame.addEventListener("click", () => {
-      gameEngine.selectedExercise = challengeExerciseSelect ? challengeExerciseSelect.value : 'elbowFlexion';
       gameEngine.resetGame();
       gameEngine.setScreen('game');
     });
@@ -314,7 +320,6 @@ function setupEventListeners() {
     });
   }
 
-  // Ações do Banner Debug (1234)
   if (btnDebugSimRep) {
     btnDebugSimRep.addEventListener("click", () => {
       gameEngine.simulateRepetition();
@@ -335,18 +340,36 @@ function setupEventListeners() {
 
   if (btnToggleSidebar) {
     btnToggleSidebar.addEventListener("click", () => {
-      if (gameSidebar) gameSidebar.classList.toggle("open");
+      if (gameSidebar) {
+        gameSidebar.classList.toggle("open");
+        setTimeout(resizeCanvas, 300);
+      }
     });
   }
 
   if (btnCloseSidebar) {
     btnCloseSidebar.addEventListener("click", () => {
-      if (gameSidebar) gameSidebar.classList.remove("open");
+      if (gameSidebar) {
+        gameSidebar.classList.remove("open");
+        setTimeout(resizeCanvas, 300);
+      }
     });
   }
 
   if (btnTogglePlay) {
     btnTogglePlay.addEventListener("click", togglePlayPause);
+  }
+
+  if (aiModelSelect) {
+    aiModelSelect.addEventListener("change", async (e) => {
+      const newModel = e.target.value;
+      if (newModel !== currentAiModel) {
+        currentAiModel = newModel;
+        if (gameStatusText) gameStatusText.textContent = `Carregando modelo ${newModel.toUpperCase()}...`;
+        await loadMediaPipeModel(newModel);
+        if (gameStatusText) gameStatusText.textContent = `Modelo ${newModel.toUpperCase()} carregado com sucesso!`;
+      }
+    });
   }
 
   if (sourceModeSelect) {
@@ -367,13 +390,15 @@ function setupEventListeners() {
 }
 
 /**
- * Ajusta o tamanho do Canvas para preencher o container com proporção correta
+ * Redimensiona o canvas apenas quando necessário (evita travamentos a 60fps)
  */
 function resizeCanvas() {
   if (!outputCanvas || !outputCanvas.parentElement) return;
   const rect = outputCanvas.parentElement.getBoundingClientRect();
-  outputCanvas.width = rect.width;
-  outputCanvas.height = rect.height;
+  if (outputCanvas.width !== Math.floor(rect.width) || outputCanvas.height !== Math.floor(rect.height)) {
+    outputCanvas.width = Math.floor(rect.width);
+    outputCanvas.height = Math.floor(rect.height);
+  }
 
   if (confettiCanvas) {
     confettiCanvas.width = window.innerWidth;
@@ -381,21 +406,18 @@ function resizeCanvas() {
   }
 }
 
-/**
- * Carrega o modelo MediaPipe Pose
- */
-async function loadMediaPipeModel() {
+async function loadMediaPipeModel(modelName = "lite") {
   try {
-    await poseService.initialize();
+    const validModel = ["lite", "full", "heavy"].includes(modelName) ? modelName : "lite";
+    await poseService.initialize({
+      modelPath: `/pose_landmarker_${validModel}.task`
+    });
   } catch (err) {
-    console.error("Erro ao carregar MediaPipe Pose:", err);
-    if (gameStatusText) gameStatusText.textContent = "Erro ao carregar modelo MediaPipe.";
+    console.error(`Erro ao carregar MediaPipe Pose (${modelName}):`, err);
+    if (gameStatusText) gameStatusText.textContent = `Erro ao carregar modelo ${modelName}.`;
   }
 }
 
-/**
- * Verifica webcams físicas disponíveis no navegador
- */
 async function checkCameraAvailability() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
   try {
@@ -420,9 +442,6 @@ async function checkCameraAvailability() {
   }
 }
 
-/**
- * Alterna modo de entrada entre Webcam, Vídeo e Imagem
- */
 async function changeSourceMode(mode) {
   currentSourceMode = mode;
   stopDetection();
@@ -442,15 +461,18 @@ async function changeSourceMode(mode) {
   }
 }
 
-/**
- * Inicia o streaming da Webcam
- */
 async function startWebcam() {
   try {
     stopMediaStream();
     const deviceId = cameraSelect ? cameraSelect.value : undefined;
+    // Resolução 1280x720 ou 640x480 para fluidez em webcams modestas
     const constraints = {
-      video: deviceId ? { deviceId: { exact: deviceId } } : { width: 1280, height: 720 }
+      video: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        width: { ideal: 1280, max: 1280 },
+        height: { ideal: 720, max: 720 },
+        frameRate: { ideal: 30, max: 60 }
+      }
     };
 
     activeStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -462,7 +484,7 @@ async function startWebcam() {
   } catch (err) {
     console.error("Erro ao acessar a webcam:", err);
     if (canvasOverlayMsg) canvasOverlayMsg.style.display = "flex";
-    if (overlayText) overlayText.textContent = "Não foi possível abrir a webcam. Escolha um arquivo de vídeo.";
+    if (overlayText) overlayText.textContent = "Não foi possível abrir a webcam. Selecione um arquivo de vídeo.";
   }
 }
 
@@ -477,9 +499,6 @@ function stopMediaStream() {
   }
 }
 
-/**
- * Upload de Vídeo Local
- */
 function handleVideoUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -496,9 +515,6 @@ function handleVideoUpload(e) {
   });
 }
 
-/**
- * Upload de Imagem Estática
- */
 function handleImageUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -514,9 +530,6 @@ function handleImageUpload(e) {
   };
 }
 
-/**
- * Iniciar / Pausar Detecção
- */
 function togglePlayPause() {
   if (isRunning) {
     stopDetection();
@@ -551,13 +564,12 @@ function stopDetection() {
 }
 
 /**
- * Loop de Renderização a cada Frame mantendo Proporção de Aspecto sem Esticar
+ * Loop Principal Otimizado para 60 FPS
  */
 function renderFrame(timestamp = performance.now()) {
   if (!isRunning) return;
 
-  resizeCanvas();
-  canvasCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+  frameCounter++;
 
   if (webcamVideo && webcamVideo.readyState >= 2) {
     const vw = webcamVideo.videoWidth || 1280;
@@ -571,44 +583,65 @@ function renderFrame(timestamp = performance.now()) {
     const offsetX = (cw - drawWidth) / 2;
     const offsetY = (ch - drawHeight) / 2;
 
+    // 1. Renderiza o feed de vídeo
     canvasCtx.drawImage(webcamVideo, offsetX, offsetY, drawWidth, drawHeight);
 
+    // 2. Rastreamento dos marcadores de cor da barra (Verde e Vermelho)
+    let barState = null;
+    const isBarTrackingEnabled = !chkBarTracker || chkBarTracker.checked;
+    if (isBarTrackingEnabled) {
+      barState = colorTracker.track(webcamVideo);
+    }
+
+    // 3. Inferência do MediaPipe Pose
     const results = poseService.detectForVideo(webcamVideo, timestamp);
 
     if (results && results.landmarks && results.landmarks.length > 0) {
       const landmarks = results.landmarks[0];
 
-      const jointAngles = calculateKeyJointAngles(landmarks, chk3D ? chk3D.checked : false);
+      // 4. Cálculos biomecânicos da Flexão de Cotovelo
+      const jointAngles = calculateKeyJointAngles(landmarks, chk3D ? chk3D.checked : false, barState);
 
-      gameEngine.processJointAngles(jointAngles);
+      const engineState = gameEngine.processElbowFlexion(jointAngles, barState);
       gameEngine.updateFloatingMessages();
 
       if (gameEngine.isDebugMode) {
-        if (debugExerciseVal) debugExerciseVal.textContent = gameEngine.selectedExercise;
         if (debugAngleVal) debugAngleVal.textContent = `${gameEngine.lastAngle}°`;
         if (debugPhaseVal) debugPhaseVal.textContent = gameEngine.repState;
+        if (debugBarVal && barState) {
+          debugBarVal.textContent = barState.detected ? (barState.isLevel ? 'Nivelada ✓' : `${barState.tiltAngle}° ⚠️`) : 'Não detectada';
+        }
       }
 
+      // 5. Renderização Neon dos Resultados
       drawPoseResults(canvasCtx, landmarks, {
         showConnectors: chkConnectors ? chkConnectors.checked : true,
-        showVectors: chkVectors ? chkVectors.checked : true,
         showAngles: chkAngles ? chkAngles.checked : true,
         showLandmarkIds: chkIds ? chkIds.checked : false,
         use3D: chk3D ? chk3D.checked : false,
+        barState: barState,
+        repProgress: engineState ? engineState.repProgress : 0,
         floatingMessages: gameEngine.floatingMessages,
         bounds: { offsetX, offsetY, drawWidth, drawHeight }
       });
 
-      updateLandmarkTable(landmarks);
+      // 6. Atualização de Telemetria da Tabela (apenas quando sidebar aberta a cada 6 frames para economizar CPU)
+      if (gameSidebar && gameSidebar.classList.contains("open") && frameCounter % 6 === 0) {
+        updateLandmarkTable(landmarks);
+      }
+    } else if (barState && barState.detected) {
+      // Se apenas a barra for detectada
+      drawPoseResults(canvasCtx, null, {
+        barState: barState,
+        floatingMessages: gameEngine.floatingMessages,
+        bounds: { offsetX, offsetY, drawWidth, drawHeight }
+      });
     }
   }
 
   animationFrameId = requestAnimationFrame(renderFrame);
 }
 
-/**
- * Processa uma Imagem Estática única mantendo Proporção
- */
 function processStaticImage() {
   resizeCanvas();
   canvasCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
@@ -631,10 +664,9 @@ function processStaticImage() {
     const landmarks = results.landmarks[0];
     const jointAngles = calculateKeyJointAngles(landmarks, chk3D ? chk3D.checked : false);
 
-    gameEngine.processJointAngles(jointAngles);
+    gameEngine.processElbowFlexion(jointAngles);
     drawPoseResults(canvasCtx, landmarks, {
       showConnectors: chkConnectors ? chkConnectors.checked : true,
-      showVectors: chkVectors ? chkVectors.checked : true,
       showAngles: chkAngles ? chkAngles.checked : true,
       showLandmarkIds: chkIds ? chkIds.checked : false,
       use3D: chk3D ? chk3D.checked : false,
@@ -645,9 +677,6 @@ function processStaticImage() {
   }
 }
 
-/**
- * Tabela com os 33 Landmarks
- */
 function initTableRows() {
   if (!landmarksTbody) return;
   landmarksTbody.innerHTML = "";
@@ -679,7 +708,7 @@ function updateLandmarkTable(landmarks) {
 }
 
 /**
- * Sistema de Confetes Digitais & Chroma Keying de Green Screen em Canvas
+ * Confetes Otimizados
  */
 function startConfetti() {
   if (!confettiCanvas) return;
@@ -688,7 +717,7 @@ function startConfetti() {
   confettiCanvas.height = window.innerHeight;
 
   const colors = ["#00f2fe", "#00ff88", "#ff007f", "#ffe600", "#9d00ff"];
-  confettiParticles = Array.from({ length: 120 }, () => ({
+  confettiParticles = Array.from({ length: 80 }, () => ({
     x: Math.random() * confettiCanvas.width,
     y: Math.random() * confettiCanvas.height - confettiCanvas.height,
     size: Math.random() * 8 + 4,
@@ -701,29 +730,6 @@ function startConfetti() {
 
   function animateConfetti() {
     ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-
-    if (victoryConfettiImg && victoryConfettiImg.complete && victoryConfettiImg.naturalWidth > 0) {
-      try {
-        ctx.save();
-        ctx.globalAlpha = 0.85;
-        ctx.drawImage(victoryConfettiImg, 0, 0, confettiCanvas.width, confettiCanvas.height);
-        
-        const imageData = ctx.getImageData(0, 0, confettiCanvas.width, confettiCanvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          if (g > 100 && g > r * 1.2 && g > b * 1.2) {
-            data[i + 3] = 0;
-          }
-        }
-        ctx.putImageData(imageData, 0, 0);
-        ctx.restore();
-      } catch (e) {
-        // Fallback
-      }
-    }
 
     confettiParticles.forEach(p => {
       p.y += p.speedY;
