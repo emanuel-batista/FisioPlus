@@ -128,6 +128,76 @@ export class GameEngine {
     }
   }
 
+  startGame() {
+    this.resetGame();
+    this.setScreen('game');
+  }
+
+  toggleDebugMode(forceState = !this.isDebugMode) {
+    const nextState = Boolean(forceState);
+    this.setDebugMode(nextState);
+
+    if (nextState) {
+      this.resetGame();
+      this.setScreen('game');
+    }
+  }
+
+  adjustRepetition(delta = 0) {
+    const step = Number(delta) || 0;
+    if (step === 0) {
+      return {
+        reps: this.repsCount,
+        target: this.isDebugMode ? '∞' : this.targetReps,
+        accuracy: this.currentAccuracy,
+        stateText: 'Sem alteração de repetições.'
+      };
+    }
+
+    if (step < 0 && this.repsCount === 0) {
+      return {
+        reps: this.repsCount,
+        target: this.isDebugMode ? '∞' : this.targetReps,
+        accuracy: this.currentAccuracy,
+        stateText: 'Não é possível remover repetição abaixo de zero.'
+      };
+    }
+
+    const targetText = this.isDebugMode ? '∞' : this.targetReps;
+    this.repsCount = Math.max(0, this.repsCount + step);
+    this.currentAccuracy = Math.min(100, Math.max(90, this.currentAccuracy));
+    this.repState = 'extended';
+    this.repProgress = 0;
+
+    if (step > 0) {
+      this.addFloatingMessage(`+1 REP! (${this.repsCount}/${targetText})`, '#00f2fe', 1.4);
+    } else {
+      this.addFloatingMessage(`-1 REP! (${this.repsCount}/${targetText})`, '#ff8c42', 1.4);
+    }
+
+    if (this.onRepCount) {
+      this.onRepCount({
+        reps: this.repsCount,
+        target: targetText,
+        accuracy: this.currentAccuracy,
+        stateText: step > 0
+          ? `Repetição ${this.repsCount} ajustada manualmente.`
+          : `Repetição removida manualmente. Total atual: ${this.repsCount}.`
+      });
+    }
+
+    if (!this.isDebugMode && this.repsCount >= this.targetReps && this.currentAccuracy >= this.minAccuracyToWin) {
+      this.triggerVictory();
+    }
+
+    return {
+      reps: this.repsCount,
+      target: targetText,
+      accuracy: this.currentAccuracy,
+      stateText: step > 0 ? `Repetição ${this.repsCount} ajustada manualmente.` : `Repetição removida manualmente. Total atual: ${this.repsCount}.`
+    };
+  }
+
   /**
    * Simula manualmente 1 repetição (Modo Debug)
    */

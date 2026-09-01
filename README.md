@@ -24,6 +24,7 @@
 - [Sistema de Rastreamento Óptico da Barra](#sistema-de-rastreamento-óptico-da-barra)
 - [Arquitetura de Módulos](#arquitetura-de-módulos)
 - [Como Executar e Escolher os Modelos de IA](#como-executar-e-escolher-os-modelos-de-ia)
+- [📱 Painel Mobile de Controle & Túnel ADM](#-painel-mobile-de-controle--túnel-adm)
 - [Modo Debug do Estande (Código 1234)](#modo-debug-do-estande-código-1234)
 - [Guia do Operador para o Dia do Evento](#guia-do-operador-para-o-dia-do-evento)
 - [Tecnologias Utilizadas](#tecnologias-utilizadas)
@@ -67,17 +68,23 @@ Para garantir precisão milimétrica mesmo em **webcams de baixo custo** e sob *
 
 ## 🏗️ Arquitetura de Módulos
 
-O código-fonte está estruturado de forma modular e otimizada dentro de `src/`:
+O código-fonte está estruturado de forma modular e otimizada dentro de `src/` e `server/`:
 
 ```
-src/
-├── main.js                   # Ponto de entrada, ciclo de vida da SPA e coordenação de renderização
-├── colorTracker.js           # Detector de cores HSV ultra-leve para a barra física (Verde / Vermelha)
-├── poseLandmarkerService.js  # Abstração do MediaPipe PoseLandmarker com suporte a Lite, Full e Heavy
-├── gameEngine.js             # Motor de regras, contagem de repetições, precisão, sons e vitórias
-├── vectorMath.js             # Kernel matemático de álgebra vetorial, produto escalar e ângulos 2D/3D
-├── drawingRenderer.js        # Engine gráfica Cyberpunk Neon para o Canvas HTML5 a 60 FPS
-└── style.css                 # Interface futurista neon de alto contraste para estande
+FisioPlus/
+├── src/
+│   ├── main.js                   # Ponto de entrada, ciclo de vida da SPA e coordenação
+│   ├── colorTracker.js           # Detector de cores HSV ultra-leve para a barra física
+│   ├── poseLandmarkerService.js  # Abstração do MediaPipe PoseLandmarker (Lite, Full, Heavy)
+│   ├── gameEngine.js             # Motor de regras, contagem de repetições, precisão e sons
+│   ├── vectorMath.js             # Kernel matemático vetorial e ângulos 2D/3D
+│   ├── drawingRenderer.js        # Engine gráfica Cyberpunk Neon a 60 FPS
+│   ├── tunnelClient.js           # Cliente WebSocket bidirecional para controle remoto
+│   └── style.css                 # Interface futurista neon de alto contraste
+├── server/
+│   ├── control-server.js         # Servidor WebSocket & HTTP com suporte a rede local e 4G
+│   └── control-panel.html        # Interface Mobile-First com telemetria e botões de ADM
+└── test/                         # Suíte de testes unitários automatizados
 ```
 
 ---
@@ -94,7 +101,7 @@ O projeto está otimizado para rodar com **60 FPS fluidos em máquinas com apena
 | **`full`** | `pose_landmarker_full.task` | **9.3 MB** | Notebooks intermediários |
 | **`heavy`** | `pose_landmarker_heavy.task` | **30.6 MB** | Desktops de alta performance com GPU dedicada |
 
-### 2. Comandos de Inicialização (Terminal)
+### 2. Comandos de Inicialização do Jogo (Terminal)
 
 ```bash
 # Instalar dependências (apenas na primeira vez)
@@ -112,16 +119,46 @@ npm run dev:full
 npm run dev:heavy
 ```
 
-### 3. Seleção via URL ou Interface
-- **Via URL**: Acesse diretamente adicionando `?model=lite`, `?model=full` ou `?model=heavy`.
-- **Pela Interface**: Clique no botão **"Cálculos"** no topo da tela do jogo e alterne o modelo no seletor da barra lateral sem precisar reiniciar a aplicação.
+---
+
+## 📱 Painel Mobile de Controle & Túnel ADM
+
+Para permitir que a equipe do estande controle o jogo e as funções de administrador **direto pelo celular** sem precisar passar na frente da câmera:
+
+<div align="center">
+  <p><strong>Senha de Acesso do Administrador:</strong> <code>FisioPlus123%</code></p>
+</div>
+
+### 1. Como Iniciar o Servidor de Controle
+
+Abra um segundo terminal e escolha a forma de conexão:
+
+#### Opção A: Na Mesma Rede Wi-Fi (Mais Rápido e Local)
+```bash
+npm run tunnel
+```
+> O terminal exibirá o endereço IP local (ex: `http://192.168.1.73:4010/`). Abra no celular conectado no mesmo Wi-Fi.
+
+#### Opção B: Em Qualquer Rede / 4G / 5G (Acesso Global na Internet)
+```bash
+npm run tunnel:public
+```
+> O terminal gerará uma **URL Pública HTTPS segura** (ex: `https://fisioplus-xxxx.loca.lt/`). Funciona em qualquer aparelho no 4G/5G ou em redes externas caso o Wi-Fi da faculdade oscile.
+
+### 2. Recursos do Painel no Celular
+- 🔒 **Sessão Persistente**: Após digitar a senha `FisioPlus123%`, o celular salva a sessão no aparelho e reconecta automaticamente.
+- 👥 **Múltiplos Operadores Simultâneos**: Toda a equipe pode estar conectada ao mesmo tempo.
+- ⚡ **Ajuste Rápido de Placar**: Botões gigantes de `+1 REP` e `-1 REP` com vibração tátil no celular.
+- 🎮 **Fluxo do Estande**: *Iniciar Partida*, *Próximo Participante* (limpa vitória e reseta), *Tela de Regras* e *Resetar*.
+- 🐞 **ADM & Modo Debug (1234)**: *Simular 1 Repetição*, *Disparar Tela de Vitória com Confetes*, *Ligar/Pausar Câmera* e *Pausar Auto-Câmera*.
+- 📊 **Telemetria ao Vivo**: Placar de repetições, precisão biomecânica, estado da câmera e tela ativa em tempo real.
 
 ---
 
 ## 🛠️ Modo Debug do Estande (Código 1234)
 
 Para testes antes de abrir para os participantes:
-- Digite a sequência **`1234`** no teclado a qualquer momento para ativar o **Modo Debug**.
+- Digite a sequência **`1234`** no teclado do PC ou toque em **"Alternar Debug"** no celular a qualquer momento.
 - **Recursos do Debug**:
   - Repetições Ilimitadas ($\infty$) para ajuste fino de iluminação e posição da câmera.
   - Botão de simular repetição manual (`+1 Rep`).
@@ -143,12 +180,23 @@ Para testes antes de abrir para os participantes:
 
 ---
 
+## 🧪 Testes Automatizados
+
+O projeto possui suíte de testes unitários para o motor biomecânico e servidor WebSocket:
+
+```bash
+npm test
+```
+
+---
+
 ## 📦 Tecnologias Utilizadas
 
 - **JavaScript (ES6+ / ESM)**: Código limpo e modular sem frameworks pesados.
 - **HTML5 Canvas 2D**: Renderização com shaders neon e baixa sobrecarga de CPU.
 - **MediaPipe Tasks Vision (WebAssembly / WebGL)**: IA de rastreamento postural em tempo real.
 - **Web Audio API**: Feedback sonoro nativo sintetizado em tempo de execução.
+- **WebSocket Server (`ws`)**: Sincronização remota bidirecional em tempo real.
 - **Vite**: Bundler ultra rápido com HMR.
 
 ---
@@ -156,3 +204,4 @@ Para testes antes de abrir para os participantes:
 ## 📄 Licença
 
 Este projeto é desenvolvido para fins acadêmicos e educacionais na **UNIARA - Universidade de Araraquara**. Disponibilizado sob a licença MIT.
+

@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#07111f" />
+  <title>FisioPlus • Painel ADM & Controle do Estande</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0d1b2e;
+      --panel-card: #132742;
+      --accent: #00f2fe;
+      --accent-glow: rgba(0, 242, 254, 0.35);
+      --green: #00ff88;
+      --green-glow: rgba(0, 255, 136, 0.35);
+      --warning: #ff8c42;
+      --danger: #ff477e;
+      --purple: #9d4edd;
+      --text: #f0f7ff;
+      --text-muted: #8eb3cf;
+      --border: rgba(0, 242, 254, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 0%, #13335e 0%, var(--bg) 60%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel);
+      padding: 12px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #00f2fe, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255, 71, 126, 0.15);
+      border: 1px solid rgba(255, 71, 126, 0.3);
+      color: var(--danger);
+      transition: all 0.3s ease;
+    }
+
+    .connection-status.online {
+      background: rgba(0, 255, 136, 0.15);
+      border-color: rgba(0, 255, 136, 0.4);
+      color: var(--green);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .btn-logout {
+      background: rgba(255, 71, 126, 0.15);
+      border: 1px solid rgba(255, 71, 126, 0.3);
+      color: var(--danger);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-logout:active {
+      transform: scale(0.95);
+    }
+
+    /* Scoreboard Live Card */
+    .scoreboard-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .scoreboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .badge-operators {
+      font-size: 0.72rem;
+      color: var(--accent);
+      background: rgba(0, 242, 254, 0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 242, 254, 0.25);
+    }
+
+    .badge-debug {
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: rgba(255, 140, 66, 0.2);
+      color: var(--warning);
+      border: 1px solid rgba(255, 140, 66, 0.4);
+    }
+
+    .badge-debug.active {
+      background: rgba(0, 255, 136, 0.2);
+      color: var(--green);
+      border-color: rgba(0, 255, 136, 0.5);
+    }
+
+    .scoreboard-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-box {
+      background: var(--panel-card);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .stat-value.green {
+      color: var(--green);
+    }
+
+    .state-banner {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Big Rep Buttons */
+    .rep-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-rep {
+      padding: 20px 10px;
+      border-radius: 14px;
+      border: none;
+      font-size: 1.35rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+
+    .btn-rep:active {
+      transform: scale(0.96);
+    }
+
+    .btn-rep-add {
+      background: linear-gradient(135deg, #00ff88, #00bd65);
+      color: #032b17;
+      box-shadow: 0 4px 15px rgba(0, 255, 136, 0.25);
+    }
+
+    .btn-rep-remove {
+      background: linear-gradient(135deg, #ff8c42, #e56214);
+      color: #260f02;
+      box-shadow: 0 4px 15px rgba(255, 140, 66, 0.25);
+    }
+
+    .btn-sub {
+      font-size: 0.75rem;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    /* Flow & Admin Action Grid */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .btn-grid.three-cols {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    button.btn-action {
+      background: var(--panel-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 10px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 4px;
+      min-height: 52px;
+      transition: all 0.15s ease;
+    }
+
+    button.btn-action:active {
+      transform: scale(0.96);
+      background: rgba(0, 242, 254, 0.15);
+      border-color: var(--accent);
+    }
+
+    button.btn-primary {
+      background: linear-gradient(135deg, #00a8ff, #00f2fe);
+      color: #021a29;
+      border: none;
+      box-shadow: 0 4px 14px rgba(0, 242, 254, 0.25);
+    }
+
+    button.btn-purple {
+      background: linear-gradient(135deg, #9d4edd, #7b2cbf);
+      color: #ffffff;
+      border: none;
+    }
+
+    /* Log Box */
+    .log-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      height: 90px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Auth Modal */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 9, 18, 0.92);
+      backdrop-filter: blur(8px);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      z-index: 1000;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .auth-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .auth-card {
+      width: min(400px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 0 35px rgba(0, 242, 254, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .auth-icon {
+      font-size: 2.5rem;
+    }
+
+    .auth-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .auth-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .auth-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      color: var(--text);
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 2px;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.25);
+    }
+
+    .auth-remember {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .auth-error {
+      font-size: 0.82rem;
+      color: var(--danger);
+      display: none;
+    }
+
+    .btn-auth-submit {
+      background: linear-gradient(135deg, #00f2fe, #00ff88);
+      color: #032b17;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-auth-submit:active {
+      transform: scale(0.97);
+    }
+
+    .tunnel-config-box {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Modal de Autenticação / Lock Screen -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-icon">🔒</div>
+      <h2 class="auth-title">Acesso de Operador</h2>
+      <p class="auth-subtitle">Digite a senha do estande FisioPlus para liberar o controle remoto.</p>
+
+      <form id="authForm" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 14px;">
+        <input type="password" id="authPasswordInput" class="auth-input" placeholder="Senha de acesso..." autocomplete="current-password" autofocus />
+        
+        <label class="auth-remember">
+          <input type="checkbox" id="authRememberCheckbox" checked style="accent-color: var(--green);" />
+          <span>Lembrar deste celular (Sessão Persistente)</span>
+        </label>
+
+        <div id="authErrorMsg" class="auth-error">Senha incorreta. Tente novamente.</div>
+
+        <button type="submit" id="btnAuthSubmit" class="btn-auth-submit">Entrar no Painel</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div>
+        <div class="brand-title">FISIOPLUS</div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Painel de Controle Remoto</div>
+      </div>
+      <div class="header-right">
+        <div id="connStatus" class="connection-status">
+          <span class="dot"></span>
+          <span id="connText">Conectando...</span>
+        </div>
+        <button id="btnLogout" class="btn-logout" title="Sair e bloquear painel">Sair</button>
+      </div>
+    </header>
+
+    <!-- Telemetria Ao Vivo -->
+    <div class="scoreboard-card">
+      <div class="scoreboard-header">
+        <span>Telemetria em Tempo Real</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <span id="badgeOperators" class="badge-operators">📱 1 operador</span>
+          <span id="badgeDebug" class="badge-debug">MODO NORMAL</span>
+        </div>
+      </div>
+
+      <div class="scoreboard-stats">
+        <div class="stat-box">
+          <span class="stat-label">REPETIÇÕES</span>
+          <span id="statReps" class="stat-value">0 / 10</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">PRECISÃO</span>
+          <span id="statAccuracy" class="stat-value green">100%</span>
+        </div>
+      </div>
+
+      <div class="state-banner">
+        <span>Tela: <strong id="statScreen" style="color: var(--accent);">Início</strong></span>
+        <span>Câmera: <strong id="statCam" style="color: var(--green);">Detectando</strong></span>
+      </div>
+    </div>
+
+    <!-- Ajuste Rápido de Repetições (Botões Gigantes) -->
+    <div class="section-card">
+      <div class="section-title">⚡ Ajuste Manual de Placar</div>
+      <div class="rep-controls-grid">
+        <button class="btn-rep btn-rep-add" data-action="addRep">
+          <span>+1 REP</span>
+          <span class="btn-sub">Adicionar</span>
+        </button>
+        <button class="btn-rep btn-rep-remove" data-action="removeRep">
+          <span>-1 REP</span>
+          <span class="btn-sub">Remover</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Fluxo da Partida no Estande -->
+    <div class="section-card">
+      <div class="section-title">🎮 Fluxo do Estande</div>
+      <div class="btn-grid">
+        <button class="btn-action btn-primary" data-action="startGame">
+          <span>▶ Iniciar Jogo</span>
+          <span class="btn-sub">Vai para arena</span>
+        </button>
+        <button class="btn-action btn-purple" data-action="nextParticipant">
+          <span>🏆 Próx. Participante</span>
+          <span class="btn-sub">Fecha vitória & reseta</span>
+        </button>
+        <button class="btn-action" data-action="goToChallenge">
+          <span>📋 Regras / Desafio</span>
+          <span class="btn-sub">Tela de instruções</span>
+        </button>
+        <button class="btn-action" data-action="resetGame">
+          <span>🔄 Resetar Partida</span>
+          <span class="btn-sub">Zera contadores</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Funções de ADM & Debug (Código 1234) -->
+    <div class="section-card">
+      <div class="section-title">🛠️ Funções de ADM & Debug (1234)</div>
+      <div class="btn-grid">
+        <button class="btn-action" data-action="debugToggle">
+          <span>🐞 Alternar Debug</span>
+          <span class="btn-sub" id="lblDebugToggle">Repetições ∞</span>
+        </button>
+        <button class="btn-action" data-action="simRep">
+          <span>⚡ Simular 1 Rep</span>
+          <span class="btn-sub">Modo Debug</span>
+        </button>
+        <button class="btn-action btn-purple" data-action="simWin">
+          <span>🎉 Testar Vitória</span>
+          <span class="btn-sub">Disparar Confetes</span>
+        </button>
+        <button class="btn-action" data-action="togglePlay">
+          <span>📹 Iniciar/Pausar Cam</span>
+          <span class="btn-sub">Vídeo ao vivo</span>
+        </button>
+        <button class="btn-action" data-action="toggleAutocam">
+          <span>⚙️ Pausar Auto-Câmera</span>
+          <span class="btn-sub">Preferência cookie</span>
+        </button>
+        <button class="btn-action" data-action="goToStart">
+          <span>🏠 Tela Inicial</span>
+          <span class="btn-sub">Voltar ao início</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- IA & Visualização -->
+    <div class="section-card">
+      <div class="section-title">🧠 Modelo de IA & Diagnóstico</div>
+      <div class="btn-grid three-cols">
+        <button class="btn-action" data-action="setModelLite">
+          <span>⚡ Lite</span>
+          <span class="btn-sub">Mais Rápido</span>
+        </button>
+        <button class="btn-action" data-action="setModelFull">
+          <span>⚖️ Full</span>
+          <span class="btn-sub">Equilibrado</span>
+        </button>
+        <button class="btn-action" data-action="setModelHeavy">
+          <span>🎯 Heavy</span>
+          <span class="btn-sub">Alta Precisão</span>
+        </button>
+      </div>
+      <button class="btn-action" data-action="toggleSidebar" style="margin-top: 4px;">
+        <span>📐 Abrir/Fechar Painel de Cálculos e Vetores</span>
+      </button>
+    </div>
+
+    <!-- Log de Atividades -->
+    <div class="log-box" id="logBox">Pronto para comandos...</div>
+
+    <div class="tunnel-config-box">
+      FisioPlus Control Tunnel • Sessão Segura e Persistente
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY_TOKEN = 'fisioplus_admin_token';
+    const STORAGE_KEY_PASS = 'fisioplus_admin_password';
+
+    const authOverlay = document.getElementById('authOverlay');
+    const authForm = document.getElementById('authForm');
+    const authPasswordInput = document.getElementById('authPasswordInput');
+    const authRememberCheckbox = document.getElementById('authRememberCheckbox');
+    const authErrorMsg = document.getElementById('authErrorMsg');
+    const btnLogout = document.getElementById('btnLogout');
+
+    const connStatus = document.getElementById('connStatus');
+    const connText = document.getElementById('connText');
+    const logBox = document.getElementById('logBox');
+    
+    const statReps = document.getElementById('statReps');
+    const statAccuracy = document.getElementById('statAccuracy');
+    const statScreen = document.getElementById('statScreen');
+    const statCam = document.getElementById('statCam');
+    const badgeDebug = document.getElementById('badgeDebug');
+    const badgeOperators = document.getElementById('badgeOperators');
+
+    let socket = null;
+    let reconnectInterval = null;
+    let isAuthenticated = false;
+
+    function getSavedToken() {
+      return localStorage.getItem(STORAGE_KEY_TOKEN) || '';
+    }
+
+    function getSavedPassword() {
+      return localStorage.getItem(STORAGE_KEY_PASS) || '';
+    }
+
+    function saveSession(token, password) {
+      if (token) localStorage.setItem(STORAGE_KEY_TOKEN, token);
+      if (password) localStorage.setItem(STORAGE_KEY_PASS, password);
+    }
+
+    function clearSession() {
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_PASS);
+      isAuthenticated = false;
+      showAuthModal();
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    }
+
+    function showAuthModal(errorText = null) {
+      authOverlay.classList.remove('hidden');
+      if (errorText) {
+        authErrorMsg.textContent = errorText;
+        authErrorMsg.style.display = 'block';
+      } else {
+        authErrorMsg.style.display = 'none';
+      }
+      setTimeout(() => authPasswordInput.focus(), 150);
+    }
+
+    function hideAuthModal() {
+      authOverlay.classList.add('hidden');
+      authErrorMsg.style.display = 'none';
+    }
+
+    function log(msg) {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      logBox.textContent = `[${timeStr}] ${msg}\n` + logBox.textContent;
+    }
+
+    function triggerHaptic() {
+      try {
+        if (navigator.vibrate) {
+          navigator.vibrate(35);
+        }
+      } catch (e) {}
+    }
+
+    function sendAction(action, payload = null) {
+      triggerHaptic();
+
+      if (!isAuthenticated) {
+        showAuthModal('Você precisa estar autenticado para enviar comandos.');
+        return;
+      }
+
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        log(`❌ Desconectado. Tentando reconectar...`);
+        return;
+      }
+
+      socket.send(JSON.stringify({
+        type: 'action',
+        action,
+        payload,
+        token: getSavedToken()
+      }));
+      log(`➡️ Ação: ${action}`);
+    }
+
+    // Vincula todos os botões de ação
+    document.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const action = btn.getAttribute('data-action');
+        sendAction(action);
+      });
+    });
+
+    btnLogout.addEventListener('click', () => {
+      clearSession();
+      log('Sessão encerrada pelo operador.');
+    });
+
+    authForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const password = authPasswordInput.value.trim();
+      if (!password) {
+        showAuthModal('Digite a senha para prosseguir.');
+        return;
+      }
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: 'auth',
+          password,
+          source: 'mobile-operator'
+        }));
+      } else {
+        connect(password);
+      }
+    });
+
+    function updateGameState(state) {
+      if (!state) return;
+
+      if (state.reps !== undefined && state.target !== undefined) {
+        statReps.textContent = `${state.reps} / ${state.target}`;
+      }
+
+      if (state.accuracy !== undefined) {
+        statAccuracy.textContent = `${state.accuracy}%`;
+      }
+
+      if (state.screen !== undefined) {
+        const screenLabels = {
+          loading: 'Carregamento',
+          start: 'Tela Inicial',
+          challenge: 'Regras / Desafio',
+          game: 'Arena do Jogo'
+        };
+        statScreen.textContent = screenLabels[state.screen] || state.screen;
+      }
+
+      if (state.isDebug !== undefined) {
+        if (state.isDebug) {
+          badgeDebug.textContent = 'DEBUG ATIVO (∞)';
+          badgeDebug.className = 'badge-debug active';
+        } else {
+          badgeDebug.textContent = 'MODO NORMAL';
+          badgeDebug.className = 'badge-debug';
+        }
+      }
+
+      if (state.isRunning !== undefined) {
+        statCam.textContent = state.isRunning ? 'Ao Vivo' : 'Pausada';
+        statCam.style.color = state.isRunning ? 'var(--green)' : 'var(--warning)';
+      }
+    }
+
+    function connect(explicitPassword = null) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const wsUrl = `${protocol}//${host}`;
+
+      connText.textContent = 'Conectando...';
+      connStatus.classList.remove('online');
+
+      try {
+        socket = new WebSocket(wsUrl);
+      } catch (err) {
+        log(`Erro ao conectar no WebSocket: ${wsUrl}`);
+        scheduleReconnect();
+        return;
+      }
+
+      socket.addEventListener('open', () => {
+        connStatus.classList.add('online');
+        connText.textContent = 'ONLINE';
+        log(`✅ Conectado ao servidor.`);
+
+        // Tenta autenticar imediatamente com token salvo ou senha
+        const token = getSavedToken();
+        const password = explicitPassword || getSavedPassword();
+
+        if (token || password) {
+          socket.send(JSON.stringify({
+            type: 'auth',
+            token,
+            password,
+            source: 'mobile-operator'
+          }));
+        } else {
+          showAuthModal();
+        }
+      });
+
+      socket.addEventListener('message', (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'authResult') {
+            if (data.ok) {
+              isAuthenticated = true;
+              hideAuthModal();
+              if (authRememberCheckbox.checked) {
+                saveSession(data.token, explicitPassword || getSavedPassword() || authPasswordInput.value);
+              }
+              log('🔓 Autenticado com sucesso no estande!');
+              if (data.gameState) updateGameState(data.gameState);
+            } else {
+              isAuthenticated = false;
+              showAuthModal(data.error || 'Senha incorreta.');
+            }
+          } else if (data.type === 'authRequired') {
+            const token = getSavedToken();
+            const password = getSavedPassword();
+            if (token || password) {
+              socket.send(JSON.stringify({
+                type: 'auth',
+                token,
+                password,
+                source: 'mobile-operator'
+              }));
+            } else {
+              showAuthModal();
+            }
+          } else if (data.type === 'operatorsCount') {
+            badgeOperators.textContent = `📱 ${data.count} ${data.count === 1 ? 'operador' : 'operadores'}`;
+          } else if (data.type === 'status') {
+            if (data.gameState) updateGameState(data.gameState);
+            log(data.message || 'Status sincronizado.');
+          } else if (data.type === 'gameState') {
+            updateGameState(data.state);
+          } else if (data.type === 'action') {
+            log(`Comando executado: ${data.action}`);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      });
+
+      socket.addEventListener('close', () => {
+        connStatus.classList.remove('online');
+        connText.textContent = 'OFFLINE';
+        log('⚠️ Conexão perdida. Reconectando...');
+        scheduleReconnect();
+      });
+
+      socket.addEventListener('error', () => {
+        connStatus.classList.remove('online');
+        connText.textContent = 'ERRO';
+      });
+    }
+
+    function scheduleReconnect() {
+      if (reconnectInterval) return;
+      reconnectInterval = setTimeout(() => {
+        reconnectInterval = null;
+        connect();
+      }, 2000);
+    }
+
+    // Inicialização
+    const initialToken = getSavedToken();
+    const initialPass = getSavedPassword();
+    if (!initialToken && !initialPass) {
+      showAuthModal();
+    }
+    connect();
+  </script>
+</body>
+</html>
+

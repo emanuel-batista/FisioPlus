@@ -3,6 +3,7 @@ import { ColorTracker } from "./colorTracker.js";
 import { drawPoseResults } from "./drawingRenderer.js";
 import { LANDMARK_NAMES, calculateKeyJointAngles } from "./vectorMath.js";
 import { GameEngine } from "./gameEngine.js";
+import { setupTunnelClient } from "./tunnelClient.js";
 
 // Instâncias Globais da Aplicação
 const poseService = new PoseLandmarkerService();
@@ -132,6 +133,25 @@ function getActiveModel() {
   return "lite";
 }
 
+// Instância Global do Túnel
+let tunnelClientInstance = null;
+
+function syncTunnelGameState() {
+  if (tunnelClientInstance) {
+    tunnelClientInstance.sendState({
+      screen: gameEngine.currentScreen,
+      reps: gameEngine.repsCount,
+      target: gameEngine.isDebugMode ? '∞' : gameEngine.targetReps,
+      accuracy: gameEngine.currentAccuracy,
+      isDebug: gameEngine.isDebugMode,
+      isRunning: isRunning,
+      isAutocamDisabled: chkDisableAutocam ? chkDisableAutocam.checked : false,
+      aiModel: currentAiModel,
+      statusText: gameStatusText ? gameStatusText.textContent : ''
+    });
+  }
+}
+
 /**
  * Inicialização Principal ao carregar o DOM
  */
@@ -139,8 +159,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   initCookieSystem();
   setupEventListeners();
   setupGameEngineCallbacks();
+  tunnelClientInstance = setupTunnelClient();
   setupKeySequenceDetector();
   initTableRows();
+
+  window.addEventListener("fisioplus:tunnel_connected", () => {
+    syncTunnelGameState();
+  });
 
   // Sincroniza seletor da UI com o modelo ativo
   if (aiModelSelect) {
@@ -160,6 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Transição para a Tela Inicial
   setTimeout(() => {
     gameEngine.setScreen('start');
+    syncTunnelGameState();
   }, 500);
 });
 
@@ -220,6 +246,7 @@ function activateDebugMode() {
   } else {
     if (gameStatusText) gameStatusText.textContent = "MODO DEBUG ATIVO (1234): Repetições Ilimitadas (∞).";
   }
+  syncTunnelGameState();
 }
 
 function deactivateDebugMode() {
@@ -227,6 +254,7 @@ function deactivateDebugMode() {
   if (debugBanner) debugBanner.style.display = "none";
   if (debugSidebarCard) debugSidebarCard.style.display = "none";
   if (hudRepsTotal) hudRepsTotal.textContent = "/ 10";
+  syncTunnelGameState();
 }
 
 function setupGameEngineCallbacks() {
@@ -253,6 +281,8 @@ function setupGameEngineCallbacks() {
         }
       }
     }
+
+    syncTunnelGameState();
   };
 
   gameEngine.onRepCount = (data) => {
@@ -260,6 +290,7 @@ function setupGameEngineCallbacks() {
     if (hudRepsTotal) hudRepsTotal.textContent = `/ ${data.target}`;
     if (hudAccuracyPercent) hudAccuracyPercent.textContent = `${data.accuracy}%`;
     if (gameStatusText && data.stateText) gameStatusText.textContent = data.stateText;
+    syncTunnelGameState();
   };
 
   gameEngine.onVictory = (data) => {
@@ -268,14 +299,120 @@ function setupGameEngineCallbacks() {
       modalVictory.classList.add("active");
       startConfetti();
     }
+    syncTunnelGameState();
   };
 
   gameEngine.onDebugChange = (isDebug) => {
     if (debugBanner) debugBanner.style.display = isDebug ? "block" : "none";
     if (debugSidebarCard) debugSidebarCard.style.display = isDebug ? "block" : "none";
     if (hudRepsTotal) hudRepsTotal.textContent = isDebug ? "/ ∞" : "/ 10";
+    syncTunnelGameState();
   };
 }
+
+function applyRemoteControlAction(action, payload = null) {
+  switch (action) {
+    case "startGame":
+      gameEngine.startGame();
+      break;
+    case "resetGame":
+    case "reset":
+      gameEngine.resetGame();
+      break;
+    case "goToStart":
+    case "screenStart":
+    case "startScreen":
+    case "home":
+      gameEngine.setScreen("start");
+      break;
+    case "goToChallenge":
+    case "challengeScreen":
+    case "challenge":
+      gameEngine.initAudio();
+      gameEngine.setScreen("challenge");
+      break;
+    case "nextParticipant":
+      stopConfetti();
+      if (modalVictory) modalVictory.classList.remove("active");
+      gameEngine.resetGame();
+      gameEngine.setScreen("challenge");
+      break;
+    case "debug":
+    case "debugOn":
+      activateDebugMode();
+      break;
+    case "debugOff":
+    case "exitDebug":
+      deactivateDebugMode();
+      break;
+    case "debugToggle":
+      if (gameEngine.isDebugMode) {
+        deactivateDebugMode();
+      } else {
+        activateDebugMode();
+      }
+      break;
+    case "simRep":
+    case "simulateRep":
+      gameEngine.simulateRepetition();
+      break;
+    case "simWin":
+    case "simulateWin":
+    case "triggerVictory":
+      gameEngine.triggerVictory();
+      break;
+    case "addRep":
+      gameEngine.adjustRepetition(1);
+      break;
+    case "removeRep":
+      gameEngine.adjustRepetition(-1);
+      break;
+    case "togglePlay":
+    case "play":
+    case "pause":
+      togglePlayPause();
+      break;
+    case "toggleAutocam":
+      if (chkDisableAutocam) {
+        chkDisableAutocam.checked = !chkDisableAutocam.checked;
+        setCookie("fisioplus_disable_autocam", chkDisableAutocam.checked ? "true" : "false", 365);
+      }
+      break;
+    case "toggleSidebar":
+      if (gameSidebar) {
+        gameSidebar.classList.toggle("open");
+        setTimeout(resizeCanvas, 300);
+      }
+      break;
+    case "setModelLite":
+    case "setModelFull":
+    case "setModelHeavy":
+    case "setModel": {
+      const model = action === "setModelLite" ? "lite" : action === "setModelFull" ? "full" : action === "setModelHeavy" ? "heavy" : (payload || "lite");
+      if (model !== currentAiModel) {
+        currentAiModel = model;
+        if (aiModelSelect) aiModelSelect.value = model;
+        if (gameStatusText) gameStatusText.textContent = `Carregando modelo ${model.toUpperCase()}...`;
+        loadMediaPipeModel(model).then(() => {
+          if (gameStatusText) gameStatusText.textContent = `Modelo ${model.toUpperCase()} carregado com sucesso!`;
+          syncTunnelGameState();
+        });
+      }
+      break;
+    }
+    default:
+      console.warn(`Ação remota desconhecida: ${action}`);
+  }
+  syncTunnelGameState();
+}
+
+window.addEventListener("fisioplus:control", (event) => {
+  const action = event.detail?.action;
+  const payload = event.detail?.payload;
+  if (action) {
+    applyRemoteControlAction(action, payload);
+  }
+});
 
 function setupEventListeners() {
   if (btnAcceptCookies) {
