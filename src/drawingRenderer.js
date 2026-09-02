@@ -20,6 +20,26 @@ const GAMING_COLORS = {
   jointTextFg: "#ffffff"
 };
 
+export function clampNormalizedPoint(point) {
+  if (!point || typeof point.x !== "number" || typeof point.y !== "number") {
+    return point;
+  }
+
+  return {
+    ...point,
+    x: Math.min(1, Math.max(0, point.x)),
+    y: Math.min(1, Math.max(0, point.y))
+  };
+}
+
+function clampNormalizedValue(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.min(1, Math.max(0, value));
+}
+
 /**
  * Desenha a barra física com os marcadores de cor Verde e Vermelho
  */
@@ -27,8 +47,8 @@ function drawPhysicalBar(ctx, barState, bounds) {
   if (!barState || !barState.detected) return;
 
   const { offsetX, offsetY, drawWidth, drawHeight } = bounds;
-  const toX = (normX) => offsetX + normX * drawWidth;
-  const toY = (normY) => offsetY + normY * drawHeight;
+  const toX = (normX) => offsetX + clampNormalizedValue(normX) * drawWidth;
+  const toY = (normY) => offsetY + clampNormalizedValue(normY) * drawHeight;
 
   ctx.save();
 
@@ -199,10 +219,10 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
       ctx.lineCap = "round";
 
       for (const connection of PoseLandmarker.POSE_CONNECTIONS) {
-        const p1 = landmarks[connection.start];
-        const p2 = landmarks[connection.end];
+        const p1 = clampNormalizedPoint(landmarks[connection.start]);
+        const p2 = clampNormalizedPoint(landmarks[connection.end]);
 
-        if (p1 && p2 && (p1.visibility ?? 1) > 0.3 && (p2.visibility ?? 1) > 0.3) {
+        if (p1 && p2 && (landmarks[connection.start]?.visibility ?? 1) > 0.3 && (landmarks[connection.end]?.visibility ?? 1) > 0.3) {
           ctx.beginPath();
           ctx.moveTo(toX(p1.x), toY(p1.y));
           ctx.lineTo(toX(p2.x), toY(p2.y));
@@ -216,8 +236,8 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
     ctx.save();
     const keyIndices = [11, 12, 13, 14, 15, 16, 23, 24];
     for (const idx of keyIndices) {
-      const lm = landmarks[idx];
-      if (!lm || (lm.visibility ?? 1) < 0.25) continue;
+      const lm = clampNormalizedPoint(landmarks[idx]);
+      if (!lm || (landmarks[idx]?.visibility ?? 1) < 0.25) continue;
 
       const cx = toX(lm.x);
       const cy = toY(lm.y);
