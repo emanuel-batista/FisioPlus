@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 
@@ -283,23 +284,67 @@ function broadcastOperatorCount() {
   }
 }
 
+function extractNgrokUrl(rawOutput) {
+  const matches = [...rawOutput.matchAll(/https?:\/\/[^\s'"<>]+\.ngrok(?:-free)?\.app/gi)];
+  if (matches.length > 0) {
+    return matches[0][0].replace(/\/+$/, '');
+  }
+
+  const fallback = rawOutput.match(/https?:\/\/[^\s'"<>]+/i);
+  return fallback ? fallback[0].replace(/\/+$/, '') : null;
+}
+
 async function openPublicTunnel(port) {
-  try {
-    const localtunnel = (await import('localtunnel')).default;
-    const tunnel = await localtunnel({ port });
-    console.log(`🌍 TÚNEL PÚBLICO GLOBAL (Acesso de qualquer 4G/5G/Internet):`);
-    console.log(`👉 Link Direto:   ${tunnel.url}/`);
+  const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const child = spawn(command, ['ngrok', 'http', String(port), '--log=stdout'], {
+    env: {
+      ...process.env,
+      NGROK_AUTHTOKEN: process.env.NGROK_AUTHTOKEN || process.env.NGROK_TOKEN || process.env.NGROK_AUTH_TOKEN || ''
+    },
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  let tunnelUrl = null;
+
+  const handleOutput = (chunk) => {
+    if (tunnelUrl) return;
+
+    const text = chunk.toString();
+    const url = extractNgrokUrl(text);
+    if (!url) return;
+
+    tunnelUrl = url;
+    console.log(`🌍 TÚNEL PÚBLICO NGROK (Acesso de qualquer 4G/5G/Internet):`);
+    console.log(`👉 Link Direto:   ${tunnelUrl}/`);
     console.log(`ℹ️  Disponível globalmente com a senha: ${ADMIN_PASSWORD}`);
     console.log(`======================================================\n`);
+  };
 
-    tunnel.on('close', () => {
-      console.warn('Túnel público global desconectado.');
-    });
-    return tunnel;
-  } catch (err) {
-    console.warn('⚠️ Não foi possível abrir o túnel público automático:', err.message);
-    console.log('Você pode usar ngrok ou cloudflared manualmente se preferir: npx untun tunnel 4010');
-  }
+  child.stdout.on('data', handleOutput);
+  child.stderr.on('data', handleOutput);
+
+  child.on('error', (err) => {
+    console.warn('⚠️ Não foi possível abrir o túnel público automático com ngrok:', err.message);
+    console.log('➡️  Use manualmente um destes comandos:');
+    console.log('   npx ngrok http 4010');
+    console.log('   ngrok http 4010');
+  });
+
+  child.on('exit', (code, signal) => {
+    if (!tunnelUrl) {
+      console.warn(`⚠️ O processo do ngrok encerrou antes de gerar uma URL pública (código=${code}, sinal=${signal}).`);
+    }
+  });
+
+  return {
+    url: tunnelUrl,
+    close: () => {
+      if (!child.killed) {
+        child.kill('SIGTERM');
+      }
+    },
+    on: () => {}
+  };
 }
 
 server.listen(PORT, HOST, async () => {

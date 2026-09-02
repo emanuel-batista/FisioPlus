@@ -143,7 +143,13 @@ npm run tunnel
 ```bash
 npm run tunnel:public
 ```
-> O terminal gerará uma **URL Pública HTTPS segura** (ex: `https://fisioplus-xxxx.loca.lt/`). Funciona em qualquer aparelho no 4G/5G ou em redes externas caso o Wi-Fi da faculdade oscile.
+> O terminal gerará uma **URL Pública HTTPS segura** com o ngrok (ex: `https://fisioplus-xxxx.ngrok-free.app/`). Esse caminho evita o bloqueio do `localtunnel` em firewalls universitários e continua funcionando em redes externas ou 4G/5G.
+
+Se preferir iniciar o túnel pelo próprio servidor local:
+```bash
+node server/control-server.js --public
+```
+> O projeto tenta abrir o túnel automaticamente com o ngrok e mostra a URL pública no console.
 
 ### 2. Recursos do Painel no Celular
 - 🔒 **Sessão Persistente**: Após digitar a senha `FisioPlus123%`, o celular salva a sessão no aparelho e reconecta automaticamente.
