@@ -48,8 +48,8 @@ function drawPhysicalBar(ctx, barState, bounds) {
 
   const { offsetX, offsetY, drawWidth, drawHeight } = bounds;
   const toX = (normX) => offsetX + clampNormalizedValue(normX) * drawWidth;
-  const toY = (normY) => offsetY + clampNormalizedValue(normY) * drawHeight;
-
+  const toY = (normY) => offsetY + clampNormalizedValue(normY) * drawHeight;  const clampCanvasX = (value, padding = 8) => Math.min(width - padding, Math.max(padding, value));
+  const clampCanvasY = (value, padding = 8) => Math.min(height - padding, Math.max(padding, value));
   ctx.save();
 
   // Linha conectando as duas extremidades da barra
@@ -256,7 +256,9 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
       if (showLandmarkIds) {
         ctx.fillStyle = "#00f2fe";
         ctx.font = "bold 11px sans-serif";
-        ctx.fillText(idx.toString(), cx + 8, cy + 4);
+        const labelX = clampCanvasX(cx + 8, 10);
+        const labelY = clampCanvasY(cy + 4, 10);
+        ctx.fillText(idx.toString(), labelX, labelY);
       }
     }
     ctx.restore();
@@ -280,11 +282,14 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
             const py = toY(lm.y);
             const text = `${item.label}${item.val}°`;
             const textWidth = ctx.measureText(text).width;
+            const boxX = clampCanvasX(px + 10, 12);
+            const boxY = clampCanvasY(py - 18, 18);
+            const boxWidth = Math.max(80, Math.min(textWidth + 14, width - boxX - 12));
 
             // Card estilizado
             ctx.fillStyle = GAMING_COLORS.jointTextBg;
             ctx.beginPath();
-            ctx.roundRect(px + 10, py - 18, textWidth + 14, 24, 6);
+            ctx.roundRect(boxX, boxY, boxWidth, 24, 6);
             ctx.fill();
 
             const borderColor = item.val < 80 ? "#00ff88" : "#00f2fe";
@@ -296,7 +301,7 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
 
             ctx.fillStyle = GAMING_COLORS.jointTextFg;
             ctx.shadowBlur = 0;
-            ctx.fillText(text, px + 17, py - 2);
+            ctx.fillText(text, boxX + 7, boxY + 16);
           }
         }
         ctx.restore();
