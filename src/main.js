@@ -4,6 +4,7 @@ import { drawPoseResults } from "./drawingRenderer.js";
 import { LANDMARK_NAMES, calculateKeyJointAngles } from "./vectorMath.js";
 import { GameEngine } from "./gameEngine.js";
 import { setupTunnelClient } from "./tunnelClient.js";
+import { buildCameraConstraints } from "./cameraConfig.js";
 
 // Instâncias Globais da Aplicação
 const poseService = new PoseLandmarkerService();
@@ -602,17 +603,22 @@ async function startWebcam() {
   try {
     stopMediaStream();
     const deviceId = cameraSelect ? cameraSelect.value : undefined;
-    // Resolução 1280x720 ou 640x480 para fluidez em webcams modestas
-    const constraints = {
-      video: {
-        deviceId: deviceId ? { exact: deviceId } : undefined,
-        width: { ideal: 1280, max: 1280 },
-        height: { ideal: 720, max: 720 },
-        frameRate: { ideal: 30, max: 60 }
-      }
-    };
+    const preferredConstraints = buildCameraConstraints(deviceId);
 
-    activeStream = await navigator.mediaDevices.getUserMedia(constraints);
+    try {
+      activeStream = await navigator.mediaDevices.getUserMedia(preferredConstraints);
+    } catch (preferredErr) {
+      console.warn("Câmera selecionada falhou, tentando fallback para a câmera padrão do navegador...", preferredErr);
+      activeStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280, max: 1280 },
+          height: { ideal: 720, max: 720 },
+          frameRate: { ideal: 30, max: 60 },
+          facingMode: "user"
+        }
+      });
+    }
+
     webcamVideo.srcObject = activeStream;
     await webcamVideo.play();
 
@@ -621,7 +627,7 @@ async function startWebcam() {
   } catch (err) {
     console.error("Erro ao acessar a webcam:", err);
     if (canvasOverlayMsg) canvasOverlayMsg.style.display = "flex";
-    if (overlayText) overlayText.textContent = "Não foi possível abrir a webcam. Selecione um arquivo de vídeo.";
+    if (overlayText) overlayText.textContent = "Não foi possível abrir a webcam. Selecione um arquivo de vídeo ou permita acesso à câmera.";
   }
 }
 
