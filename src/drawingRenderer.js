@@ -40,6 +40,14 @@ function clampNormalizedValue(value) {
   return Math.min(1, Math.max(0, value));
 }
 
+function clampCanvasX(value, width, padding = 8) {
+  return Math.min(width - padding, Math.max(padding, value));
+}
+
+function clampCanvasY(value, height, padding = 8) {
+  return Math.min(height - padding, Math.max(padding, value));
+}
+
 /**
  * Desenha a barra física com os marcadores de cor Verde e Vermelho
  */
@@ -48,8 +56,7 @@ function drawPhysicalBar(ctx, barState, bounds) {
 
   const { offsetX, offsetY, drawWidth, drawHeight } = bounds;
   const toX = (normX) => offsetX + clampNormalizedValue(normX) * drawWidth;
-  const toY = (normY) => offsetY + clampNormalizedValue(normY) * drawHeight;  const clampCanvasX = (value, padding = 8) => Math.min(width - padding, Math.max(padding, value));
-  const clampCanvasY = (value, padding = 8) => Math.min(height - padding, Math.max(padding, value));
+  const toY = (normY) => offsetY + clampNormalizedValue(normY) * drawHeight;
   ctx.save();
 
   // Linha conectando as duas extremidades da barra
@@ -200,8 +207,10 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
   };
 
   const { offsetX, offsetY, drawWidth, drawHeight } = renderBounds;
-  const toX = (normX) => offsetX + normX * drawWidth;
-  const toY = (normY) => offsetY + normY * drawHeight;
+  const toX = (normX) => offsetX + clampNormalizedValue(normX) * drawWidth;
+  const toY = (normY) => offsetY + clampNormalizedValue(normY) * drawHeight;
+  const safeX = (value, padding = 10) => clampCanvasX(value, width, padding);
+  const safeY = (value, padding = 10) => clampCanvasY(value, height, padding);
 
   // 1. Desenha os Marcadores da Barra Física
   if (barState && barState.detected) {
@@ -256,8 +265,8 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
       if (showLandmarkIds) {
         ctx.fillStyle = "#00f2fe";
         ctx.font = "bold 11px sans-serif";
-        const labelX = clampCanvasX(cx + 8, 10);
-        const labelY = clampCanvasY(cy + 4, 10);
+        const labelX = safeX(cx + 8, 10);
+        const labelY = safeY(cy + 4, 10);
         ctx.fillText(idx.toString(), labelX, labelY);
       }
     }
@@ -282,8 +291,8 @@ export function drawPoseResults(ctx, landmarks, options = {}) {
             const py = toY(lm.y);
             const text = `${item.label}${item.val}°`;
             const textWidth = ctx.measureText(text).width;
-            const boxX = clampCanvasX(px + 10, 12);
-            const boxY = clampCanvasY(py - 18, 18);
+            const boxX = safeX(px + 10, 12);
+            const boxY = safeY(py - 18, 18);
             const boxWidth = Math.max(80, Math.min(textWidth + 14, width - boxX - 12));
 
             // Card estilizado
