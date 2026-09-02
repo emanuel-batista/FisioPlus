@@ -97,8 +97,10 @@ export class ColorTracker {
 
   /**
    * Processa um elemento de vídeo para encontrar os centróides das bolas Verde e Vermelha
+   * @param {HTMLVideoElement} videoElement - O vídeo da webcam
+   * @param {Array} wrists - Array com as posições dos pulsos em coordenadas normalizadas [0..1]. Ex: [{x: 0.2, y: 0.5}, {x: 0.8, y: 0.5}]
    */
-  track(videoElement) {
+  track(videoElement, wrists = null) {
     if (!this.enabled || !videoElement || videoElement.readyState < 2) {
       return this.barState;
     }
@@ -126,11 +128,45 @@ export class ColorTracker {
     const gRange = this.colorRanges.green;
     const rRange = this.colorRanges.red;
 
+    // --- LÓGICA DO QUADRADO (ROI - Region of Interest) ---
+    const rois = [];
+    if (wrists && wrists.length > 0) {
+      // 100 pixels na resolução original precisam ser escalados para a resolução de processamento
+      const roiSize = 100 * this.downscaleFactor;
+      const halfRoi = Math.floor(roiSize / 2);
+
+      for (const wrist of wrists) {
+        if (wrist && wrist.x !== undefined && wrist.y !== undefined) {
+          rois.push({
+            minX: Math.max(0, Math.floor(wrist.x * procW) - halfRoi),
+            maxX: Math.min(procW, Math.floor(wrist.x * procW) + halfRoi),
+            minY: Math.max(0, Math.floor(wrist.y * procH) - halfRoi),
+            maxY: Math.min(procH, Math.floor(wrist.y * procH) + halfRoi)
+          });
+        }
+      }
+    }
+
     // Amostragem com salto de 2 pixels para dobrar a performance em máquinas modestas
     const step = 2;
     for (let y = 0; y < procH; y += step) {
       const rowOffset = y * procW * 4;
       for (let x = 0; x < procW; x += step) {
+        
+        // Se temos pulsos definidos, verificamos se o pixel atual está dentro de algum dos quadrados de 100x100
+        if (rois.length > 0) {
+          let insideRoi = false;
+          for (let i = 0; i < rois.length; i++) {
+            const r = rois[i];
+            if (x >= r.minX && x <= r.maxX && y >= r.minY && y <= r.maxY) {
+              insideRoi = true;
+              break;
+            }
+          }
+          // Se não estiver dentro do quadrado perto do pulso, ignora o pixel e economiza CPU
+          if (!insideRoi) continue; 
+        }
+
         const idx = rowOffset + x * 4;
         const r = data[idx];
         const g = data[idx + 1];
@@ -147,10 +183,8 @@ export class ColorTracker {
         // Checagem Verde
         if (
           isPotentialGreen &&
-          hsv.h >= gRange.hMin &&
-          hsv.h <= gRange.hMax &&
-          hsv.s >= gRange.sMin &&
-          hsv.v >= gRange.vMin
+          hsv.h >= gRange.hMin && hsv.h <= gRange.hMax &&
+          hsv.s >= gRange.sMin && hsv.v >= gRange.vMin
         ) {
           greenSumX += x;
           greenSumY += y;
@@ -161,8 +195,7 @@ export class ColorTracker {
           isPotentialRed &&
           ((hsv.h >= rRange.hMin1 && hsv.h <= rRange.hMax1) ||
            (hsv.h >= rRange.hMin2 && hsv.h <= rRange.hMax2)) &&
-          hsv.s >= rRange.sMin &&
-          hsv.v >= rRange.vMin
+          hsv.s >= rRange.sMin && hsv.v >= rRange.vMin
         ) {
           redSumX += x;
           redSumY += y;
